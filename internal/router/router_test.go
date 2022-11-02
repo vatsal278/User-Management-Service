@@ -2,13 +2,12 @@ package router
 
 import (
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
 	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/testutil"
 	"github.com/golang/mock/gomock"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
 	"github.com/vatsal278/UserManagementService/internal/config"
 	"github.com/vatsal278/UserManagementService/internal/handler"

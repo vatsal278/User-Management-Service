@@ -6,9 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/vatsal278/UserManagementService/internal/config"
 	"github.com/vatsal278/UserManagementService/internal/handler"
-	//middleware2 "github.com/vatsal278/UserManagementService/middleware"
-	//sqlDb "github.com/vatsal278/UserManagementService/internal/repo/datasource"
-	//jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/jwt"
 	"net/http"
 )
 
