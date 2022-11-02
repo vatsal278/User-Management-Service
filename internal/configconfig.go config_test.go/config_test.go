@@ -22,15 +22,24 @@ func TestInitSvcConfig(t *testing.T) {
 				cfg: Config{
 					ServiceRouteVersion: "v2",
 					ServerConfig:        config.ServerConfig{},
+					DummyCfg: DummySvcCfg{
+						DummyCfg: "dummy cfg",
+					},
 				},
 			},
 			want: &SvcConfig{
-				Cfg: &Config{
+				cfg: &Config{
 					ServiceRouteVersion: "v2",
 					ServerConfig:        config.ServerConfig{},
+					DummyCfg: DummySvcCfg{
+						DummyCfg: "dummy cfg",
+					},
 				},
 				ServiceRouteVersion: "v2",
 				SvrCfg:              config.ServerConfig{},
+				DummySvc: DummyInternalSvc{
+					Data: "dummy cfg",
+				},
 			},
 		},
 	}
