@@ -10,8 +10,8 @@ import (
 	"github.com/PereRohit/util/testutil"
 	"github.com/golang/mock/gomock"
 
-	"github.com/vatsal278/user-mgmt-svc/internal/config"
-	"github.com/vatsal278/user-mgmt-svc/internal/handler"
+	"github.com/vatsal278/UserManagementService/internal/config"
+	"github.com/vatsal278/UserManagementService/internal/handler"
 )
 
 func TestRegister(t *testing.T) {
@@ -29,7 +29,6 @@ func TestRegister(t *testing.T) {
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
 					ServiceRouteVersion: "v1",
-					DummySvc:            config.DummyInternalSvc{},
 				}
 			},
 			validate: func(w http.ResponseWriter) {
@@ -74,7 +73,7 @@ func TestRegister(t *testing.T) {
 					Status:  http.StatusOK,
 					Message: http.StatusText(http.StatusOK),
 					Data: map[string]svcHealthStat{
-						handler.UserMgmtSvcName: {
+						handler.UserManagementServiceName: {
 							Status:  http.StatusText(http.StatusOK),
 							Message: "",
 						},
@@ -91,7 +90,6 @@ func TestRegister(t *testing.T) {
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
 					ServiceRouteVersion: "v1",
-					DummySvc:            config.DummyInternalSvc{},
 				}
 			},
 			validate: func(w http.ResponseWriter) {
@@ -130,7 +128,6 @@ func TestRegister(t *testing.T) {
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
 					ServiceRouteVersion: "v1",
-					DummySvc:            config.DummyInternalSvc{},
 				}
 			},
 			validate: func(w http.ResponseWriter) {
