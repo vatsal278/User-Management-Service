@@ -6,7 +6,7 @@ import (
 	"github.com/PereRohit/util/config"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/vatsal278/UserManagementService/internal/model"
-	//jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/jwt"
+	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/jwt"
 	"log"
 )
 
@@ -25,9 +25,9 @@ type SvcConfig struct {
 	ServiceRouteVersion string
 	SvrCfg              config.ServerConfig
 	// add internal services after init
-	DbSvc DbSvc
-	DbCfg DbCfg
-	//JwtSvc      JWTSvc
+	DbSvc       DbSvc
+	DbCfg       DbCfg
+	JwtSvc      JWTSvc
 	MsgQueueSvc MsgQueue `json:"msg_queue"`
 }
 
@@ -35,10 +35,10 @@ type DbSvc struct {
 	Db *sql.DB
 }
 
-//type JWTSvc struct {
-//	jwtSvc   jwtSvc.JWTService
-//	loginSvc jwtSvc.LoginService
-//}
+type JWTSvc struct {
+	jwtSvc   jwtSvc.JWTService
+	loginSvc jwtSvc.LoginService
+}
 type DbCfg struct {
 	Port      string `json:"dbPort"`
 	Host      string `json:"dbHost"`
@@ -89,9 +89,9 @@ func InitSvcConfig(cfg Config) *SvcConfig {
 		SvrCfg:              cfg.ServerConfig,
 		DbCfg:               cfg.DataBase,
 		DbSvc:               DbSvc{Db: dataBase},
-		//JwtSvc: JWTSvc{
-		//	jwtSvc:   nil,
-		//	loginSvc: nil,
-		//},
+		JwtSvc: JWTSvc{
+			jwtSvc:   nil,
+			loginSvc: nil,
+		},
 	}
 }
