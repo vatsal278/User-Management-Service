@@ -26,7 +26,6 @@ type SvcConfig struct {
 	SvrCfg              config.ServerConfig
 	// add internal services after init
 	DbSvc DbSvc
-	DbCfg DbCfg
 	//JwtSvc      JWTSvc
 	MsgQueueSvc MsgQueue `json:"msg_queue"`
 }
@@ -87,7 +86,6 @@ func InitSvcConfig(cfg Config) *SvcConfig {
 		Cfg:                 &cfg,
 		ServiceRouteVersion: cfg.ServiceRouteVersion,
 		SvrCfg:              cfg.ServerConfig,
-		DbCfg:               cfg.DataBase,
 		DbSvc:               DbSvc{Db: dataBase},
 		//JwtSvc: JWTSvc{
 		//	jwtSvc:   nil,
