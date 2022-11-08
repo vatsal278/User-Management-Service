@@ -38,7 +38,7 @@ func attachUserMgmtSvcRoutes(m *mux.Router, svcCfg *config.SvcConfig) *mux.Route
 	//loginService := jwtSvc.StaticLoginService()
 	//
 	//svc := handler.NewUserMgmtSvc(dbSvc, loginService, jwtService)
-	//middleware := middleware2.NewUserMgmtMiddleware(svcCfg.Cfg)
+	////middleware := middleware2.NewUserMgmtMiddleware(svcCfg.Cfg)
 	//
 	//m.HandleFunc("/register", svc.SignUp).Methods(http.MethodPost)
 	//m.HandleFunc("/login", svc.Login).Methods(http.MethodPost)
