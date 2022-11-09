@@ -16,8 +16,8 @@ type Config struct {
 	ServiceRouteVersion string              `json:"service_route_version"`
 	ServerConfig        config.ServerConfig `json:"server_config"`
 	// add custom config structs below for any internal services
-	DataBase     DbCfg `json:"db_svc"`
-	MessageQueue MsgQueue
+	DataBase     DbCfg    `json:"db_svc"`
+	MessageQueue MsgQueue `json:"msg_queue"`
 }
 type MsgQueue struct {
 	AllowedUrl []string `json:"allowed_url"`
@@ -29,9 +29,8 @@ type SvcConfig struct {
 	ServiceRouteVersion string
 	SvrCfg              config.ServerConfig
 	// add internal services after init
-	DbSvc       DbSvc
-	JwtSvc      JWTSvc
-	MsgQueueSvc MsgQueue `json:"msg_queue"`
+	DbSvc  DbSvc
+	JwtSvc JWTSvc
 }
 
 type DbSvc struct {
