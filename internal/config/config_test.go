@@ -25,7 +25,6 @@ func TestInitSvcConfig(t *testing.T) {
 					DataBase: DbCfg{
 						Driver: "mysql",
 					},
-					MessageQueue: "",
 				},
 			},
 			want: &SvcConfig{
@@ -35,7 +34,6 @@ func TestInitSvcConfig(t *testing.T) {
 					DataBase: DbCfg{
 						Driver: "mysql",
 					},
-					MessageQueue: "",
 				},
 				ServiceRouteVersion: "v2",
 				SvrCfg:              config.ServerConfig{},
