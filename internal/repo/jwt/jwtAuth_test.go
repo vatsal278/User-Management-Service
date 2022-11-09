@@ -80,12 +80,7 @@ func TestJwtService_ValidateToken(t *testing.T) {
 				if !reflect.DeepEqual(err, nil) {
 					t.Errorf("Want: %v, Got: %v", nil, err)
 				}
-				mapClaims, ok := token.Claims.(jwt.MapClaims)
-				if !ok {
-					t.Log("failed to assert claims")
-					t.Fail()
-					return
-				}
+				mapClaims := token.Claims.(jwt.MapClaims)
 				userId := mapClaims["user_id"]
 				if !reflect.DeepEqual(userId, "1") {
 					t.Errorf("Want: %v, Got: %v", "1", userId)
@@ -95,7 +90,7 @@ func TestJwtService_ValidateToken(t *testing.T) {
 		{
 			name: "Failure:: Validate Token",
 			setupFunc: func() string {
-				return "123"
+				return ""
 			},
 			validator: func(token *jwt.Token, err error) {
 				if !reflect.DeepEqual(err.Error(), errors.New("token contains an invalid number of segments").Error()) {
