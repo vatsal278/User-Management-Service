@@ -17,6 +17,21 @@ type MockDataSource struct {
 	recorder *MockDataSourceMockRecorder
 }
 
+func (m *MockDataSource) Get(m2 map[string]interface{}) ([]model.User, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MockDataSource) Insert(user model.User) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MockDataSource) Update(filterSet map[string]interface{}, filterWhere map[string]interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 // MockDataSourceMockRecorder is the mock recorder for MockDataSource.
 type MockDataSourceMockRecorder struct {
 	mock *MockDataSource

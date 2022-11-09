@@ -4,10 +4,23 @@
     "host": "",
     "port": "80",
     "version": "0.0.1",
-    "name": "userManagementService",
+    "name": "userMgmtSvc",
     "log_level": "info"
   },
-  "custom_svc": {
-    "data": "this is a custom config"
+  "db_svc": {
+    "dbDriver" : "mysql",
+    "dbUser" : "root",
+    "dbPass" : "pass",
+    "dbName" : "usermgmt",
+    "tableName" : "userdatabase",
+    "dbHost" : "localhost",
+    "dbPort" : "9095"
+  },
+  "msg_queue": {
+    "allowed_url": [
+      "127.0.0.1:80"
+    ],
+    "user_agent": "UserAgent",
+    "url_check_flag" : true
   }
 }

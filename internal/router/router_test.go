@@ -2,16 +2,14 @@ package router
 
 import (
 	"encoding/json"
+	respModel "github.com/PereRohit/util/model"
+	"github.com/PereRohit/util/testutil"
+	"github.com/golang/mock/gomock"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	respModel "github.com/PereRohit/util/model"
-	"github.com/PereRohit/util/testutil"
-	"github.com/golang/mock/gomock"
-
 	"github.com/vatsal278/UserManagementService/internal/config"
-	"github.com/vatsal278/UserManagementService/internal/handler"
 )
 
 func TestRegister(t *testing.T) {
@@ -29,7 +27,6 @@ func TestRegister(t *testing.T) {
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
 					ServiceRouteVersion: "v1",
-					DummySvc:            config.DummyInternalSvc{},
 				}
 			},
 			validate: func(w http.ResponseWriter) {
@@ -73,12 +70,7 @@ func TestRegister(t *testing.T) {
 				diff = testutil.Diff(resp, respModel.Response{
 					Status:  http.StatusOK,
 					Message: http.StatusText(http.StatusOK),
-					Data: map[string]svcHealthStat{
-						handler.UserManagementServiceName: {
-							Status:  http.StatusText(http.StatusOK),
-							Message: "",
-						},
-					},
+					Data:    map[string]svcHealthStat{},
 				})
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
@@ -91,7 +83,6 @@ func TestRegister(t *testing.T) {
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
 					ServiceRouteVersion: "v1",
-					DummySvc:            config.DummyInternalSvc{},
 				}
 			},
 			validate: func(w http.ResponseWriter) {
@@ -130,7 +121,6 @@ func TestRegister(t *testing.T) {
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
 					ServiceRouteVersion: "v1",
-					DummySvc:            config.DummyInternalSvc{},
 				}
 			},
 			validate: func(w http.ResponseWriter) {

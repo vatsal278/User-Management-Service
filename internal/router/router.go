@@ -1,15 +1,12 @@
 package router
 
 import (
-	"net/http"
-
 	"github.com/PereRohit/util/constant"
 	"github.com/PereRohit/util/middleware"
 	"github.com/gorilla/mux"
-
 	"github.com/vatsal278/UserManagementService/internal/config"
 	"github.com/vatsal278/UserManagementService/internal/handler"
-	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
+	"net/http"
 )
 
 func Register(svcCfg *config.SvcConfig) *mux.Router {
@@ -30,17 +27,29 @@ func Register(svcCfg *config.SvcConfig) *mux.Router {
 	m.MethodNotAllowedHandler = http.HandlerFunc(commons.MethodNotAllowed)
 
 	// attach routes for services below
-	m = attachUserManagementServiceRoutes(m, svcCfg)
+	m = attachUserMgmtSvcRoutes(m, svcCfg)
 
 	return m
 }
 
-func attachUserManagementServiceRoutes(m *mux.Router, svcCfg *config.SvcConfig) *mux.Router {
-	dataSource := datasource.NewDummyDs(&svcCfg.DummySvc)
-
-	svc := handler.NewUserManagementService(dataSource)
-
-	m.HandleFunc("/ping", svc.Ping).Methods(http.MethodPost)
+func attachUserMgmtSvcRoutes(m *mux.Router, svcCfg *config.SvcConfig) *mux.Router {
+	//dbSvc := sqlDb.NewSql(svcCfg.DbSvc, svcCfg.DbCfg.TableName)
+	//jwtService := jwtSvc.JWTAuthService()
+	//loginService := jwtSvc.StaticLoginService()
+	//
+	//svc := handler.NewUserMgmtSvc(dbSvc, loginService, jwtService)
+	////middleware := middleware2.NewUserMgmtMiddleware(svcCfg.Cfg)
+	//
+	//m.HandleFunc("/register", svc.SignUp).Methods(http.MethodPost)
+	//m.HandleFunc("/login", svc.Login).Methods(http.MethodPost)
+	//
+	//route1 := m.PathPrefix("/activate").Subrouter()
+	//route1.HandleFunc("", svc.Activation).Methods(http.MethodPut)
+	//route1.Use(middleware.ScreenRequest)
+	//
+	//route2 := m.PathPrefix("/user").Subrouter()
+	//route2.HandleFunc("", svc.UserDetails).Methods(http.MethodGet)
+	//route2.Use(middleware.ExtractUser)
 
 	return m
 }
