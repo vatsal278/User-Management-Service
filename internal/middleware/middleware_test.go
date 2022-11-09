@@ -442,8 +442,6 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 			res := httptest.NewRecorder()
 			req, jwt := tt.setupFunc()
 
-			// STEP 2: call the test function
-
 			middleware := NewUserMgmtMiddleware(&config.SvcConfig{
 				Cfg: &tt.config,
 				JwtSvc: config.JWTSvc{
