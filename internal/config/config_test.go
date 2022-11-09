@@ -1,6 +1,7 @@
 package config
 
 import (
+	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/jwt"
 	"testing"
 
 	"github.com/PereRohit/util/config"
@@ -25,17 +26,16 @@ func TestInitSvcConfig(t *testing.T) {
 					DataBase: DbCfg{
 						Driver: "mysql",
 					},
-					MessageQueue: "",
 				},
 			},
 			want: &SvcConfig{
+				JwtSvc: JWTSvc{JwtSvc: jwtSvc.JWTAuthService()},
 				Cfg: &Config{
 					ServiceRouteVersion: "v2",
 					ServerConfig:        config.ServerConfig{},
 					DataBase: DbCfg{
 						Driver: "mysql",
 					},
-					MessageQueue: "",
 				},
 				ServiceRouteVersion: "v2",
 				SvrCfg:              config.ServerConfig{},
