@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/vatsal278/UserManagementService/internal/config"
-	"github.com/vatsal278/UserManagementService/internal/handler"
 )
 
 func TestRegister(t *testing.T) {
@@ -71,12 +70,7 @@ func TestRegister(t *testing.T) {
 				diff = testutil.Diff(resp, respModel.Response{
 					Status:  http.StatusOK,
 					Message: http.StatusText(http.StatusOK),
-					Data: map[string]svcHealthStat{
-						handler.UserManagementServiceName: {
-							Status:  http.StatusText(http.StatusOK),
-							Message: "",
-						},
-					},
+					Data:    map[string]svcHealthStat{},
 				})
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
