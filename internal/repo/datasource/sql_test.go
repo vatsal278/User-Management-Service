@@ -45,7 +45,6 @@ func TestSqlDs_HealthCheck(t *testing.T) {
 	dataBase := config.Connect(dbcfg, dbcfg.TableName)
 	svcConfig := config.SvcConfig{
 		DbSvc: config.DbSvc{Db: dataBase},
-		DbCfg: dbcfg,
 	}
 	dB := NewSql(svcConfig.DbSvc, "newTemp")
 
@@ -93,11 +92,11 @@ func TestGet(t *testing.T) {
 	dataBase := config.Connect(dbcfg, dbcfg.TableName)
 	svcConfig := config.SvcConfig{
 		DbSvc: config.DbSvc{Db: dataBase},
-		DbCfg: dbcfg,
+		Cfg:   &config.Config{DataBase: dbcfg},
 	}
 	dB := sqlDs{
 		sqlSvc: svcConfig.DbSvc.Db,
-		table:  svcConfig.DbCfg.TableName,
+		table:  svcConfig.Cfg.DataBase.TableName,
 	}
 
 	tests := []struct {
@@ -314,12 +313,12 @@ func TestInsert(t *testing.T) {
 	}
 	dataBase := config.Connect(dbcfg, dbcfg.TableName)
 	svcConfig := config.SvcConfig{
+		Cfg:   &config.Config{DataBase: dbcfg},
 		DbSvc: config.DbSvc{Db: dataBase},
-		DbCfg: dbcfg,
 	}
 	dB := sqlDs{
 		sqlSvc: svcConfig.DbSvc.Db,
-		table:  svcConfig.DbCfg.TableName,
+		table:  svcConfig.Cfg.DataBase.TableName,
 	}
 	// table driven tests
 	tests := []struct {
@@ -490,12 +489,12 @@ func TestUpdate(t *testing.T) {
 	}
 	dataBase := config.Connect(dbcfg, dbcfg.TableName)
 	svcConfig := config.SvcConfig{
+		Cfg:   &config.Config{DataBase: dbcfg},
 		DbSvc: config.DbSvc{Db: dataBase},
-		DbCfg: dbcfg,
 	}
 	dB := sqlDs{
 		sqlSvc: svcConfig.DbSvc.Db,
-		table:  svcConfig.DbCfg.TableName,
+		table:  svcConfig.Cfg.DataBase.TableName,
 	}
 	// table driven tests
 	tests := []struct {
