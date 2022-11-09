@@ -2,13 +2,16 @@ package jwtSvc
 
 import (
 	"fmt"
+	"github.com/PereRohit/util/log"
 	"github.com/dgrijalva/jwt-go"
 	"os"
 	"time"
 )
 
+//go:generate mockgen --build_flags=--mod=mod --destination=./../../../pkg/mock/mock_jwt.go --package=mock github.com/vatsal278/UserManagementService/internal/repo/jwt JWTService
+
 type JWTService interface {
-	GenerateToken(userId string) string
+	GenerateToken(signingMethod jwt.SigningMethod, userId string) (string, error)
 	ValidateToken(token string) (*jwt.Token, error)
 	DecodeToken(token string) (jwt.MapClaims, error)
 }
@@ -32,12 +35,12 @@ func JWTAuthService() JWTService {
 func getSecretKey() string {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "secret"
+		secret = "DefaultSecretJwtKey"
 	}
 	return secret
 }
 
-func (service *jwtService) GenerateToken(userId string) string {
+func (service *jwtService) GenerateToken(signingMethod jwt.SigningMethod, userId string) (string, error) {
 	claims := &authCustomClaims{
 		userId,
 		jwt.StandardClaims{
@@ -45,13 +48,14 @@ func (service *jwtService) GenerateToken(userId string) string {
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(signingMethod, claims)
 
 	t, err := token.SignedString([]byte(service.secretKey))
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		return "", err
 	}
-	return t
+	return t, nil
 }
 
 func (service *jwtService) ValidateToken(encodedToken string) (*jwt.Token, error) {
