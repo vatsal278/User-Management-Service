@@ -6,7 +6,6 @@ import (
 	"github.com/PereRohit/util/config"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/vatsal278/UserManagementService/internal/model"
-	//jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/jwt"
 	"log"
 )
 
@@ -14,30 +13,24 @@ type Config struct {
 	ServiceRouteVersion string              `json:"service_route_version"`
 	ServerConfig        config.ServerConfig `json:"server_config"`
 	// add custom config structs below for any internal services
-	DataBase     DbCfg `json:"db_svc"`
-	MessageQueue string
+	DataBase DbCfg    `json:"db_svc"`
+	MsgQueue MsgQueue `json:"msg_queue"`
 }
 type MsgQueue struct {
-	url string
+	AllowedUrl []string `json:"allowed_url"`
+	UserAgent  string   `json:"user_agent"`
+	UrlCheck   bool     `json:"url_check_flag"`
 }
 type SvcConfig struct {
 	Cfg                 *Config
 	ServiceRouteVersion string
 	SvrCfg              config.ServerConfig
-	// add internal services after init
-	DbSvc DbSvc
-	//JwtSvc      JWTSvc
-	MsgQueueSvc MsgQueue `json:"msg_queue"`
+	DbSvc               DbSvc
 }
 
 type DbSvc struct {
 	Db *sql.DB
 }
-
-//type JWTSvc struct {
-//	jwtSvc   jwtSvc.JWTService
-//	loginSvc jwtSvc.LoginService
-//}
 type DbCfg struct {
 	Port      string `json:"dbPort"`
 	Host      string `json:"dbHost"`
