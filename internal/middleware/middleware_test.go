@@ -41,7 +41,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
 				jwt := jwtSvc.JWTAuthService()
 
-				jwtToken, err := jwt.GenerateToken(jwtGo.SigningMethodHS256, "123")
+				jwtToken, err := jwt.GenerateToken(jwtGo.SigningMethodHS256, "123", 1)
 				if err != nil {
 					t.Fail()
 				}

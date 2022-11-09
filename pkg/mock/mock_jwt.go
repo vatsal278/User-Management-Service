@@ -6,6 +6,7 @@ package mock
 
 import (
 	reflect "reflect"
+	time "time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	gomock "github.com/golang/mock/gomock"
@@ -34,34 +35,19 @@ func (m *MockJWTService) EXPECT() *MockJWTServiceMockRecorder {
 	return m.recorder
 }
 
-// DecodeToken mocks base method.
-func (m *MockJWTService) DecodeToken(arg0 string) (jwt.MapClaims, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DecodeToken", arg0)
-	ret0, _ := ret[0].(jwt.MapClaims)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// DecodeToken indicates an expected call of DecodeToken.
-func (mr *MockJWTServiceMockRecorder) DecodeToken(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecodeToken", reflect.TypeOf((*MockJWTService)(nil).DecodeToken), arg0)
-}
-
 // GenerateToken mocks base method.
-func (m *MockJWTService) GenerateToken(arg0 jwt.SigningMethod, arg1 string) (string, error) {
+func (m *MockJWTService) GenerateToken(arg0 jwt.SigningMethod, arg1 string, arg2 time.Duration) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateToken", arg0, arg1)
+	ret := m.ctrl.Call(m, "GenerateToken", arg0, arg1, arg2)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GenerateToken indicates an expected call of GenerateToken.
-func (mr *MockJWTServiceMockRecorder) GenerateToken(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockJWTServiceMockRecorder) GenerateToken(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateToken", reflect.TypeOf((*MockJWTService)(nil).GenerateToken), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateToken", reflect.TypeOf((*MockJWTService)(nil).GenerateToken), arg0, arg1, arg2)
 }
 
 // ValidateToken mocks base method.

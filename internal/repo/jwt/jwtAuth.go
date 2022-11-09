@@ -11,9 +11,8 @@ import (
 //go:generate mockgen --build_flags=--mod=mod --destination=./../../../pkg/mock/mock_jwt.go --package=mock github.com/vatsal278/UserManagementService/internal/repo/jwt JWTService
 
 type JWTService interface {
-	GenerateToken(signingMethod jwt.SigningMethod, userId string) (string, error)
+	GenerateToken(signingMethod jwt.SigningMethod, userId string, validity time.Duration) (string, error)
 	ValidateToken(token string) (*jwt.Token, error)
-	DecodeToken(token string) (jwt.MapClaims, error)
 }
 
 type authCustomClaims struct {
@@ -40,11 +39,11 @@ func getSecretKey() string {
 	return secret
 }
 
-func (service *jwtService) GenerateToken(signingMethod jwt.SigningMethod, userId string) (string, error) {
+func (service *jwtService) GenerateToken(signingMethod jwt.SigningMethod, userId string, validity time.Duration) (string, error) {
 	claims := &authCustomClaims{
 		userId,
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 100000).Unix(),
+			ExpiresAt: time.Now().Add(time.Hour * 24 * 30 * validity).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
@@ -60,22 +59,12 @@ func (service *jwtService) GenerateToken(signingMethod jwt.SigningMethod, userId
 
 func (service *jwtService) ValidateToken(encodedToken string) (*jwt.Token, error) {
 	return jwt.Parse(encodedToken, func(token *jwt.Token) (interface{}, error) {
-		if _, isvalid := token.Method.(*jwt.SigningMethodHMAC); !isvalid {
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+		if !ok {
 			err := fmt.Errorf("invalid token %+v", token.Header["alg"])
 			return nil, err
 		}
 		return []byte(service.secretKey), nil
 	})
 
-}
-
-func (service *jwtService) DecodeToken(encodedToken string) (jwt.MapClaims, error) {
-	token, err := jwt.Parse(encodedToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return token, nil
-	})
-	claims := token.Claims.(jwt.MapClaims)
-	return claims, err
 }

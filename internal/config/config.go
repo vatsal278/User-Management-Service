@@ -38,8 +38,8 @@ type DbSvc struct {
 }
 
 type JWTSvc struct {
-	JwtSvc   jwtSvc.JWTService
-	LoginSvc jwtSvc.LoginService
+	JwtSvc jwtSvc.JWTService
+	//LoginSvc jwtSvc.LoginService
 }
 type DbCfg struct {
 	Port      string `json:"dbPort"`
