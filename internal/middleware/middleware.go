@@ -57,7 +57,7 @@ func (u UserMgmtMiddleware) ExtractUser(next http.HandlerFunc) http.Handler {
 		}
 		userId, ok := mapClaims["user_id"]
 		if !ok {
-			response.ToJson(w, http.StatusInternalServerError, codes.GetErr(codes.ErrAssertClaims), nil)
+			response.ToJson(w, http.StatusInternalServerError, codes.GetErr(codes.ErrAssertUserid), nil)
 			return
 		}
 		ctx := session.SetSession(r.Context(), userId)

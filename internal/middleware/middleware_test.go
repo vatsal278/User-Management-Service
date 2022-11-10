@@ -7,6 +7,7 @@ import (
 	"github.com/PereRohit/util/response"
 	jwtGo "github.com/dgrijalva/jwt-go"
 	"github.com/golang/mock/gomock"
+	"github.com/vatsal278/UserManagementService/internal/codes"
 	"github.com/vatsal278/UserManagementService/internal/config"
 	"github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/UserManagementService/pkg/mock"
@@ -100,7 +101,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				}
 				expected := &model.Response{
 					Status:  http.StatusUnauthorized,
-					Message: "UnAuthorized",
+					Message: codes.GetErr(codes.ErrUnauthorized),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
@@ -129,7 +130,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				}
 				expected := &model.Response{
 					Status:  http.StatusUnauthorized,
-					Message: "UnAuthorized",
+					Message: codes.GetErr(codes.ErrUnauthorized),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
@@ -166,7 +167,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				}
 				expected := &model.Response{
 					Status:  http.StatusUnauthorized,
-					Message: "Compared literals are not same",
+					Message: codes.GetErr(codes.ErrMatchingToken),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
@@ -204,7 +205,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				}
 				expected := &model.Response{
 					Status:  http.StatusUnauthorized,
-					Message: "Token is expired",
+					Message: codes.GetErr(codes.ErrTokenExpired),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
@@ -241,7 +242,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				}
 				expected := &model.Response{
 					Status:  http.StatusUnauthorized,
-					Message: "Unauthorized",
+					Message: codes.GetErr(codes.ErrUnauthorized),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
@@ -282,7 +283,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				}
 				expected := &model.Response{
 					Status:  http.StatusInternalServerError,
-					Message: "unable to assert claims",
+					Message: codes.GetErr(codes.ErrAssertClaims),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
@@ -322,7 +323,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				}
 				expected := &model.Response{
 					Status:  http.StatusInternalServerError,
-					Message: "unable to assert userid",
+					Message: codes.GetErr(codes.ErrAssertUserid),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
@@ -429,7 +430,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 				}
 				expected := &model.Response{
 					Status:  http.StatusUnauthorized,
-					Message: "UnAuthorized user agent",
+					Message: codes.GetErr(codes.ErrUnauthorizedAgent),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
@@ -466,7 +467,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 				}
 				expected := &model.Response{
 					Status:  http.StatusUnauthorized,
-					Message: "UnAuthorized url",
+					Message: codes.GetErr(codes.ErrUnauthorizedUrl),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
