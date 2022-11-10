@@ -1,14 +1,13 @@
-package jwtSvc
+package authentication
 
 import (
 	"fmt"
 	"github.com/PereRohit/util/log"
 	"github.com/dgrijalva/jwt-go"
-	"os"
 	"time"
 )
 
-//go:generate mockgen --build_flags=--mod=mod --destination=./../../../pkg/mock/mock_jwt.go --package=mock github.com/vatsal278/UserManagementService/internal/repo/jwt JWTService
+//go:generate mockgen --build_flags=--mod=mod --destination=./../../../pkg/mock/mock_jwt.go --package=mock github.com/vatsal278/UserManagementService/internal/repo/authentication JWTService
 
 type JWTService interface {
 	GenerateToken(signingMethod jwt.SigningMethod, userId string, validity time.Duration) (string, error)
@@ -25,14 +24,13 @@ type jwtService struct {
 	userId    string
 }
 
-func JWTAuthService() JWTService {
+func JWTAuthService(secret string) JWTService {
 	return &jwtService{
-		secretKey: getSecretKey(),
+		secretKey: getSecretKey(secret),
 	}
 }
 
-func getSecretKey() string {
-	secret := os.Getenv("JWT_SECRET")
+func getSecretKey(secret string) string {
 	if secret == "" {
 		secret = "DefaultSecretJwtKey"
 	}

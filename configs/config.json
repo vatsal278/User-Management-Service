@@ -22,5 +22,6 @@
     ],
     "user_agent": "UserAgent",
     "url_check_flag" : true
-  }
+  },
+  "secret_key": "secret"
 }

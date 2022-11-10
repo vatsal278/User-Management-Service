@@ -6,9 +6,9 @@ import (
 	"github.com/PereRohit/util/config"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/vatsal278/UserManagementService/internal/model"
-	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/jwt"
+	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 
-	//jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/jwt"
+	//jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"log"
 )
 
@@ -18,6 +18,7 @@ type Config struct {
 	// add custom config structs below for any internal services
 	DataBase     DbCfg    `json:"db_svc"`
 	MessageQueue MsgQueue `json:"msg_queue"`
+	SecretKey    string   `json:"secret_key"`
 }
 type MsgQueue struct {
 	AllowedUrl []string `json:"allowed_url"`
@@ -85,7 +86,7 @@ func Connect(cfg DbCfg, tableName string) *sql.DB {
 func InitSvcConfig(cfg Config) *SvcConfig {
 	// init required services and assign to the service struct fields
 	dataBase := Connect(cfg.DataBase, cfg.DataBase.TableName)
-	jwtSvc := jwtSvc.JWTAuthService()
+	jwtSvc := jwtSvc.JWTAuthService(cfg.SecretKey)
 	return &SvcConfig{
 		Cfg:                 &cfg,
 		ServiceRouteVersion: cfg.ServiceRouteVersion,

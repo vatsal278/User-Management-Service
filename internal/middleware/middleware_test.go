@@ -8,7 +8,7 @@ import (
 	jwtGo "github.com/dgrijalva/jwt-go"
 	"github.com/golang/mock/gomock"
 	"github.com/vatsal278/UserManagementService/internal/config"
-	"github.com/vatsal278/UserManagementService/internal/repo/jwt"
+	"github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/UserManagementService/pkg/mock"
 	"github.com/vatsal278/UserManagementService/pkg/session"
 	"io/ioutil"
@@ -20,7 +20,10 @@ import (
 
 var x func()
 
+var hit = false
+
 func test(w http.ResponseWriter, r *http.Request) {
+	hit = true
 	c := r.Context()
 	id := session.GetSession(c)
 	response.ToJson(w, http.StatusOK, "passed", id)
@@ -31,27 +34,31 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	tests := []struct {
 		name      string
-		setupFunc func() (*http.Request, jwtSvc.JWTService)
+		setupFunc func() (*http.Request, authentication.JWTService)
 		validator func(*httptest.ResponseRecorder)
 	}{
 		{
 			name: "SUCCESS::ExtractUser",
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
-				jwt := jwtSvc.JWTAuthService()
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
 
-				jwtToken, err := jwt.GenerateToken(jwtGo.SigningMethodHS256, "123", 1)
-				if err != nil {
-					t.Fail()
+				token := jwtGo.Token{
+					Claims: jwtGo.MapClaims{"user_id": "123"},
+					Valid:  true,
 				}
+				mockJwtSvc.EXPECT().ValidateToken("jwtToken").Return(&token, nil)
 				req.AddCookie(&http.Cookie{
 					Name:  "token",
-					Value: jwtToken,
+					Value: "jwtToken",
 				})
-				return req, jwt
+				return req, mockJwtSvc
 			},
 			validator: func(res *httptest.ResponseRecorder) {
+				if hit != true {
+					t.Errorf("Want: %v, Got: %v", true, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -71,16 +78,19 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 		},
 		{
 			name: "Failure::ExtractUser:: empty token value",
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
-				jwt := jwtSvc.JWTAuthService()
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
 				req.AddCookie(&http.Cookie{
 					Name:  "token",
 					Value: "",
 				})
-				return req, jwt
+				return req, mockJwtSvc
 			},
 			validator: func(res *httptest.ResponseRecorder) {
+				if hit != false {
+					t.Errorf("Want: %v, Got: %v", false, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -100,12 +110,15 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 		},
 		{
 			name: "Failure::ExtractUser:: no cookie found",
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
-				jwt := jwtSvc.JWTAuthService()
-				return req, jwt
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				return req, mockJwtSvc
 			},
 			validator: func(res *httptest.ResponseRecorder) {
+				if hit != false {
+					t.Errorf("Want: %v, Got: %v", false, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -116,7 +129,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				}
 				expected := &model.Response{
 					Status:  http.StatusUnauthorized,
-					Message: "http: named cookie not present",
+					Message: "UnAuthorized",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
@@ -126,7 +139,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 		},
 		{
 			name: "Failure::ExtractUser:: compared literals not same",
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
 				req.AddCookie(&http.Cookie{
@@ -140,6 +153,9 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				return req, mockJwtSvc
 			},
 			validator: func(res *httptest.ResponseRecorder) {
+				if hit != false {
+					t.Errorf("Want: %v, Got: %v", false, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -160,10 +176,10 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 		},
 		{
 			name: "Failure::ExtractUser:: Token is expired ",
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
-				//jwt := jwtSvc.JWTAuthService()
+				//authentication := jwtSvc.JWTAuthService()
 				req.AddCookie(&http.Cookie{
 					Name:  "token",
 					Value: "123",
@@ -175,6 +191,9 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				return req, mockJwtSvc
 			},
 			validator: func(res *httptest.ResponseRecorder) {
+				if hit != false {
+					t.Errorf("Want: %v, Got: %v", false, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -195,10 +214,9 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 		},
 		{
 			name: "Failure::ExtractUser:: Token is invalid ",
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
-				//jwt := jwtSvc.JWTAuthService()
 				req.AddCookie(&http.Cookie{
 					Name:  "token",
 					Value: "123",
@@ -210,6 +228,9 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				return req, mockJwtSvc
 			},
 			validator: func(res *httptest.ResponseRecorder) {
+				if hit != false {
+					t.Errorf("Want: %v, Got: %v", false, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -230,10 +251,10 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 		},
 		{
 			name: "Failure::ExtractUser:: mapClaims not ok",
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
-				//jwt := jwtSvc.JWTAuthService()
+				//authentication := jwtSvc.JWTAuthService()
 				req.AddCookie(&http.Cookie{
 					Name:  "token",
 					Value: "123",
@@ -248,7 +269,9 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				return req, mockJwtSvc
 			},
 			validator: func(res *httptest.ResponseRecorder) {
-
+				if hit != false {
+					t.Errorf("Want: %v, Got: %v", false, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -260,6 +283,46 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				expected := &model.Response{
 					Status:  http.StatusInternalServerError,
 					Message: "unable to assert claims",
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&result, expected) {
+					t.Errorf("Want: %v, Got: %v", expected, result)
+				}
+			},
+		},
+		{
+			name: "Failure::ExtractUser:: user id not in claims",
+			setupFunc: func() (*http.Request, authentication.JWTService) {
+
+				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
+				req.AddCookie(&http.Cookie{
+					Name:  "token",
+					Value: "123",
+				})
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				token := jwtGo.Token{
+					Claims: jwtGo.MapClaims{},
+					Valid:  true,
+				}
+				mockJwtSvc.EXPECT().ValidateToken(gomock.Any()).Return(&token, nil)
+
+				return req, mockJwtSvc
+			},
+			validator: func(res *httptest.ResponseRecorder) {
+				if hit != false {
+					t.Errorf("Want: %v, Got: %v", false, hit)
+				}
+				by, _ := ioutil.ReadAll(res.Body)
+				result := model.Response{}
+				err := json.Unmarshal(by, &result)
+				if err != nil {
+					t.Log(err)
+					t.Fail()
+					return
+				}
+				expected := &model.Response{
+					Status:  http.StatusInternalServerError,
+					Message: "unable to assert userid",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&result, expected) {
@@ -282,6 +345,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 					JwtSvc: jwt,
 				},
 			})
+			hit = false
 			x := middleware.ExtractUser(test)
 			x.ServeHTTP(res, req)
 
@@ -296,7 +360,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 	tests := []struct {
 		name      string
 		config    config.Config
-		setupFunc func() (*http.Request, jwtSvc.JWTService)
+		setupFunc func() (*http.Request, authentication.JWTService)
 		validator func(*httptest.ResponseRecorder)
 	}{
 		{
@@ -307,14 +371,17 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 					UserAgent:  "UserAgent",
 					UrlCheck:   true,
 				}},
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
-				jwt := jwtSvc.JWTAuthService()
+				jwt := mock.NewMockJWTService(mockCtrl)
 				req.Header.Set("User-Agent", "UserAgent")
 				return req, jwt
 			},
 			validator: func(res *httptest.ResponseRecorder) {
+				if hit != true {
+					t.Errorf("Want: %v, Got: %v", true, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -341,14 +408,17 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 					UserAgent:  "U",
 					UrlCheck:   true,
 				}},
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
-				jwt := jwtSvc.JWTAuthService()
+				jwt := mock.NewMockJWTService(mockCtrl)
 				req.Header.Set("User-Agent", "UserAgent")
 				return req, jwt
 			},
 			validator: func(res *httptest.ResponseRecorder) {
+				if hit != false {
+					t.Errorf("Want: %v, Got: %v", false, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -375,14 +445,17 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 					UserAgent:  "UserAgent",
 					UrlCheck:   true,
 				}},
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
-				jwt := jwtSvc.JWTAuthService()
+				jwt := mock.NewMockJWTService(mockCtrl)
 				req.Header.Set("User-Agent", "UserAgent")
 				return req, jwt
 			},
 			validator: func(res *httptest.ResponseRecorder) {
+				if hit != false {
+					t.Errorf("Want: %v, Got: %v", false, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -402,19 +475,23 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 			},
 		},
 		{
-			name: "Failure::Screen Request:: url check not required",
+			name: "Success::Screen Request:: url check not required",
 			config: config.Config{
 				MessageQueue: config.MsgQueue{
-					UrlCheck: false,
+					UrlCheck:  false,
+					UserAgent: "UserAgent",
 				}},
-			setupFunc: func() (*http.Request, jwtSvc.JWTService) {
+			setupFunc: func() (*http.Request, authentication.JWTService) {
 
 				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
-				jwt := jwtSvc.JWTAuthService()
+				jwt := mock.NewMockJWTService(mockCtrl)
 				req.Header.Set("User-Agent", "UserAgent")
 				return req, jwt
 			},
 			validator: func(res *httptest.ResponseRecorder) {
+				if hit != true {
+					t.Errorf("Want: %v, Got: %v", true, hit)
+				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
 				err := json.Unmarshal(by, &result)
@@ -448,6 +525,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 					JwtSvc: jwt,
 				},
 			})
+			hit = false
 			x := middleware.ScreenRequest(test)
 			x.ServeHTTP(res, req)
 

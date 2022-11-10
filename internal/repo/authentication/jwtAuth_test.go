@@ -1,4 +1,4 @@
-package jwtSvc
+package authentication
 
 import (
 	"errors"
@@ -55,7 +55,7 @@ func TestJwtService_GenerateToken(t *testing.T) {
 	// to execute the tests in the table
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			jwtSvc := JWTAuthService()
+			jwtSvc := JWTAuthService("")
 			token, err := jwtSvc.GenerateToken(tt.signingMethod, "1", 1)
 
 			tt.validator(jwtSvc, token, err)
@@ -64,7 +64,7 @@ func TestJwtService_GenerateToken(t *testing.T) {
 	}
 }
 func TestJwtService_ValidateToken(t *testing.T) {
-	jwtSvc := JWTAuthService()
+	jwtSvc := JWTAuthService("")
 	tests := []struct {
 		name      string
 		setupFunc func() string

@@ -1,7 +1,7 @@
 package config
 
 import (
-	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/jwt"
+	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"testing"
 
 	"github.com/PereRohit/util/config"
