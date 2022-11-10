@@ -29,7 +29,7 @@ func TestInitSvcConfig(t *testing.T) {
 				},
 			},
 			want: &SvcConfig{
-				JwtSvc: JWTSvc{JwtSvc: jwtSvc.JWTAuthService()},
+				JwtSvc: JWTSvc{JwtSvc: jwtSvc.JWTAuthService("")},
 				Cfg: &Config{
 					ServiceRouteVersion: "v2",
 					ServerConfig:        config.ServerConfig{},
