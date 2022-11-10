@@ -7,6 +7,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/vatsal278/UserManagementService/internal/model"
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
+	"github.com/vatsal278/msgbroker/pkg/sdk"
 
 	//jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"log"
@@ -16,11 +17,12 @@ type Config struct {
 	ServiceRouteVersion string              `json:"service_route_version"`
 	ServerConfig        config.ServerConfig `json:"server_config"`
 	// add custom config structs below for any internal services
-	DataBase     DbCfg    `json:"db_svc"`
-	MessageQueue MsgQueue `json:"msg_queue"`
-	SecretKey    string   `json:"secret_key"`
+	DataBase     DbCfg       `json:"db_svc"`
+	MessageQueue MsgQueueCfg `json:"msg_queue"`
+	SecretKey    string      `json:"secret_key"`
 }
-type MsgQueue struct {
+type MsgQueueCfg struct {
+	SvcUrl     string   `json:"service_url"`
 	AllowedUrl []string `json:"allowed_url"`
 	UserAgent  string   `json:"user_agent"`
 	UrlCheck   bool     `json:"url_check_flag"`
@@ -30,10 +32,15 @@ type SvcConfig struct {
 	ServiceRouteVersion string
 	SvrCfg              config.ServerConfig
 	// add internal services after init
-	DbSvc  DbSvc
-	JwtSvc JWTSvc
+	DbSvc        DbSvc
+	JwtSvc       JWTSvc
+	MsgBrokerSvc MsgQueue
 }
 
+type MsgQueue struct {
+	MsgBroker   sdk.MsgBrokerSvcI
+	PublisherId string
+}
 type DbSvc struct {
 	Db *sql.DB
 }
@@ -87,11 +94,21 @@ func InitSvcConfig(cfg Config) *SvcConfig {
 	// init required services and assign to the service struct fields
 	dataBase := Connect(cfg.DataBase, cfg.DataBase.TableName)
 	jwtSvc := jwtSvc.JWTAuthService(cfg.SecretKey)
+	msgBrokerSvc := sdk.NewMsgBrokerSvc(cfg.MessageQueue.SvcUrl)
+	err := msgBrokerSvc.RegisterSub("PUT", "http://localhost/activate", "", "Approved Account Activation Channel")
+	if err != nil {
+		panic(err.Error())
+	}
+	//id, err := msgBrokerSvc.RegisterPub("New Account Activation Request Channel")
+	//if err != nil {
+	//	panic(err.Error())
+	//}
 	return &SvcConfig{
 		Cfg:                 &cfg,
 		ServiceRouteVersion: cfg.ServiceRouteVersion,
 		SvrCfg:              cfg.ServerConfig,
 		DbSvc:               DbSvc{Db: dataBase},
 		JwtSvc:              JWTSvc{JwtSvc: jwtSvc},
+		MsgBrokerSvc:        MsgQueue{MsgBroker: msgBrokerSvc},
 	}
 }

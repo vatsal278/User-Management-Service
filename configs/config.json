@@ -17,6 +17,7 @@
     "dbPort" : "9095"
   },
   "msg_queue": {
+    "service_url": "http://localhost:9095",
     "allowed_url": [
       "127.0.0.1:80"
     ],

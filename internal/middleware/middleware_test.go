@@ -367,7 +367,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 		{
 			name: "SUCCESS::Screen Request",
 			config: config.Config{
-				MessageQueue: config.MsgQueue{
+				MessageQueue: config.MsgQueueCfg{
 					AllowedUrl: []string{"192.0.2.1:1234", "value2", "value3"},
 					UserAgent:  "UserAgent",
 					UrlCheck:   true,
@@ -404,7 +404,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 		{
 			name: "Failure::Screen Request:: unauthorized user agent",
 			config: config.Config{
-				MessageQueue: config.MsgQueue{
+				MessageQueue: config.MsgQueueCfg{
 					AllowedUrl: []string{"192.0.2.1:1234", "value2", "value3"},
 					UserAgent:  "U",
 					UrlCheck:   true,
@@ -441,7 +441,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 		{
 			name: "Failure::Screen Request:: unauthorized url",
 			config: config.Config{
-				MessageQueue: config.MsgQueue{
+				MessageQueue: config.MsgQueueCfg{
 					AllowedUrl: []string{"value", "value2", "value3"},
 					UserAgent:  "UserAgent",
 					UrlCheck:   true,
@@ -478,7 +478,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 		{
 			name: "Success::Screen Request:: url check not required",
 			config: config.Config{
-				MessageQueue: config.MsgQueue{
+				MessageQueue: config.MsgQueueCfg{
 					UrlCheck:  false,
 					UserAgent: "UserAgent",
 				}},
