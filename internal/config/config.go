@@ -7,8 +7,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/vatsal278/UserManagementService/internal/model"
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
+	"github.com/vatsal278/UserManagementService/internal/repo/helpers"
 	"github.com/vatsal278/msgbroker/pkg/sdk"
-
 	//jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"log"
 )
@@ -22,10 +22,12 @@ type Config struct {
 	SecretKey    string      `json:"secret_key"`
 }
 type MsgQueueCfg struct {
-	SvcUrl     string   `json:"service_url"`
-	AllowedUrl []string `json:"allowed_url"`
-	UserAgent  string   `json:"user_agent"`
-	UrlCheck   bool     `json:"url_check_flag"`
+	SvcUrl                  string   `json:"service_url"`
+	AllowedUrl              []string `json:"allowed_url"`
+	UserAgent               string   `json:"user_agent"`
+	UrlCheck                bool     `json:"url_check_flag"`
+	NewAccountChannel       string   `json:"new_account_channel"`
+	ActivatedAccountChannel string   `json:"account_activation_channel"`
 }
 type SvcConfig struct {
 	Cfg                 *Config
@@ -38,16 +40,17 @@ type SvcConfig struct {
 }
 
 type MsgQueue struct {
-	MsgBroker   sdk.MsgBrokerSvcI
-	PublisherId string
+	MsgBroker sdk.MsgBrokerSvcI
+	PubId     string
+	Channel   string
 }
 type DbSvc struct {
 	Db *sql.DB
 }
 
 type JWTSvc struct {
-	JwtSvc jwtSvc.JWTService
-	//LoginSvc jwtSvc.LoginService
+	JwtSvc   jwtSvc.JWTService
+	LoginSvc helpers.LoginService
 }
 type DbCfg struct {
 	Port      string `json:"dbPort"`
@@ -95,7 +98,11 @@ func InitSvcConfig(cfg Config) *SvcConfig {
 	dataBase := Connect(cfg.DataBase, cfg.DataBase.TableName)
 	jwtSvc := jwtSvc.JWTAuthService(cfg.SecretKey)
 	msgBrokerSvc := sdk.NewMsgBrokerSvc(cfg.MessageQueue.SvcUrl)
-	err := msgBrokerSvc.RegisterSub("PUT", "http://localhost/activate", "", "Approved Account Activation Channel")
+	err := msgBrokerSvc.RegisterSub("PUT", "http://localhost/activate", "", cfg.MessageQueue.ActivatedAccountChannel)
+	if err != nil {
+		panic(err.Error())
+	}
+	id, err := msgBrokerSvc.RegisterPub(cfg.MessageQueue.NewAccountChannel)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -108,7 +115,7 @@ func InitSvcConfig(cfg Config) *SvcConfig {
 		ServiceRouteVersion: cfg.ServiceRouteVersion,
 		SvrCfg:              cfg.ServerConfig,
 		DbSvc:               DbSvc{Db: dataBase},
-		JwtSvc:              JWTSvc{JwtSvc: jwtSvc},
-		MsgBrokerSvc:        MsgQueue{MsgBroker: msgBrokerSvc},
+		JwtSvc:              JWTSvc{JwtSvc: jwtSvc, LoginSvc: helpers.StaticLoginService()},
+		MsgBrokerSvc:        MsgQueue{MsgBroker: msgBrokerSvc, PubId: id, Channel: cfg.MessageQueue.NewAccountChannel},
 	}
 }

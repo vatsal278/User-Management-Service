@@ -6,10 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/vatsal278/UserManagementService/internal/config"
 	"github.com/vatsal278/UserManagementService/internal/handler"
-	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
-	"github.com/vatsal278/UserManagementService/internal/repo/helpers"
-	"github.com/vatsal278/msgbroker/pkg/sdk"
 	"net/http"
 )
 
@@ -38,11 +35,7 @@ func Register(svcCfg *config.SvcConfig) *mux.Router {
 
 func attachUserMgmtSvcRoutes(m *mux.Router, svcCfg *config.SvcConfig) *mux.Router {
 	dbSvc := datasource.NewSql(svcCfg.DbSvc, svcCfg.Cfg.DataBase.TableName)
-	jwtService := jwtSvc.JWTAuthService(svcCfg.Cfg.SecretKey)
-	loginService := helpers.StaticLoginService()
-	msgQueueSvc := sdk.NewMsgBrokerSvc(svcCfg.Cfg.MessageQueue.SvcUrl)
-
-	svc := handler.NewUserMgmtSvc(dbSvc, loginService, jwtService, msgQueueSvc)
+	svc := handler.NewUserMgmtSvc(dbSvc, svcCfg.JwtSvc.LoginSvc, svcCfg.JwtSvc.JwtSvc, svcCfg.MsgBrokerSvc)
 	//middleware := middleware2.NewUserMgmtMiddleware(svcCfg.Cfg)
 
 	m.HandleFunc("/register", svc.SignUp).Methods(http.MethodPost)

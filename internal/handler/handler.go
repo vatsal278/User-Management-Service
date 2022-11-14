@@ -2,15 +2,17 @@ package handler
 
 import (
 	"encoding/json"
+	"github.com/PereRohit/util/log"
 	"github.com/PereRohit/util/response"
+	"github.com/vatsal278/UserManagementService/internal/config"
 	"github.com/vatsal278/UserManagementService/internal/logic"
 	"github.com/vatsal278/UserManagementService/internal/model"
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"github.com/vatsal278/UserManagementService/internal/repo/helpers"
-	"github.com/vatsal278/msgbroker/pkg/sdk"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 const UserManagementServiceName = "userManagementService"
@@ -29,7 +31,7 @@ type userMgmtSvc struct {
 	logic logic.UserMgmtSvcLogicIer
 }
 
-func NewUserMgmtSvc(ds datasource.DataSourceI, loginService helpers.LoginService, jwtService jwtSvc.JWTService, msgQueue sdk.MsgBrokerSvcI) UserMgmtSvcHandler {
+func NewUserMgmtSvc(ds datasource.DataSourceI, loginService helpers.LoginService, jwtService jwtSvc.JWTService, msgQueue config.MsgQueue) UserMgmtSvcHandler {
 	svc := &userMgmtSvc{
 		logic: logic.NewUserMgmtSvcLogic(ds, loginService, jwtService, msgQueue),
 	}
@@ -52,27 +54,39 @@ func (svc userMgmtSvc) HealthCheck() (svcName string, msg string, stat bool) {
 }
 func (svc userMgmtSvc) SignUp(w http.ResponseWriter, r *http.Request) {
 	var credential model.SignUpCredentials
-
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		log.Error(err)
+		response.ToJson(w, http.StatusBadRequest, "unable to read request body", nil)
 		return
 	}
 	err = json.Unmarshal(body, &credential)
 	if err != nil {
+		log.Error(err)
+		response.ToJson(w, http.StatusBadRequest, "unable to unmarshal request body", nil)
+		return
+	}
+	credential.RegistrationTimestamp, err = time.Parse("02-01-2006 15:04:05", credential.RegistrationDate)
+	if err != nil {
+		log.Error(err)
+		response.ToJson(w, http.StatusBadRequest, "unable to parse registration date and timestamp", nil)
 		return
 	}
 	resp := svc.logic.Signup(credential)
-
 	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 }
 func (svc userMgmtSvc) Login(w http.ResponseWriter, r *http.Request) {
 	var credential model.LoginCredentials
 	bytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		log.Error(err)
+		response.ToJson(w, http.StatusBadRequest, "unable to read request body", nil)
 		return
 	}
 	err = json.Unmarshal(bytes, &credential)
 	if err != nil {
+		log.Error(err)
+		response.ToJson(w, http.StatusBadRequest, "unable to unmarshal request body", nil)
 		return
 	}
 	resp := svc.logic.Login(w, credential)

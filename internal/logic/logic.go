@@ -6,14 +6,13 @@ import (
 	respModel "github.com/PereRohit/util/model"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
+	"github.com/vatsal278/UserManagementService/internal/config"
 	"github.com/vatsal278/UserManagementService/internal/model"
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/UserManagementService/internal/repo/bCrypt"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"github.com/vatsal278/UserManagementService/internal/repo/helpers"
-	"github.com/vatsal278/msgbroker/pkg/sdk"
 	"net/http"
-	"time"
 )
 
 //go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_logic.go --package=mock github.com/vatsal278/UserManagementService/internal/logic UserManagementServiceLogicIer
@@ -30,10 +29,10 @@ type userMgmtSvcLogic struct {
 	DsSvc        datasource.DataSourceI
 	loginService helpers.LoginService
 	jwtService   jwtSvc.JWTService
-	msgQueue     sdk.MsgBrokerSvcI
+	msgQueue     config.MsgQueue
 }
 
-func NewUserMgmtSvcLogic(ds datasource.DataSourceI, loginSvc helpers.LoginService, jwtService jwtSvc.JWTService, msgQueue sdk.MsgBrokerSvcI) UserMgmtSvcLogicIer {
+func NewUserMgmtSvcLogic(ds datasource.DataSourceI, loginSvc helpers.LoginService, jwtService jwtSvc.JWTService, msgQueue config.MsgQueue) UserMgmtSvcLogicIer {
 	return &userMgmtSvcLogic{
 		DsSvc:        ds,
 		loginService: loginSvc,
@@ -79,12 +78,11 @@ func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.
 		Password:     credential.Password,
 		Name:         credential.Name,
 		Company:      "perennial",
-		RegisteredOn: time.Now(),
+		RegisteredOn: credential.RegistrationTimestamp,
 	}
 	salt := bCrypt.GeneratePasswordHash([]byte(newUser.Password))
 	newUser.Salt = salt
 	err = l.DsSvc.Insert(newUser)
-	log.Info(newUser.Id)
 	if err != nil {
 		log.Error(err.Error())
 		return &respModel.Response{
@@ -93,17 +91,8 @@ func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.
 			Data:    nil,
 		}
 	}
-	id, err := l.msgQueue.RegisterPub("New Account Activation Request Channel")
-	if err != nil {
-		log.Error(err)
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "Problem registering to account management service",
-			Data:    nil,
-		}
-	}
 	userID := fmt.Sprintf(`{"user_id":"%s"}`, newUser.Id)
-	err = l.msgQueue.PushMsg(userID, id, "New Account Activation Request")
+	err = l.msgQueue.MsgBroker.PushMsg(userID, l.msgQueue.PubId, l.msgQueue.Channel)
 	if err != nil {
 		log.Error(err)
 		return &respModel.Response{

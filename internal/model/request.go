@@ -6,10 +6,11 @@ type PingRequest struct {
 	Data string `json:"data" validate:"required"`
 }
 type SignUpCredentials struct {
-	Name             string    `json:"name" binding:"required"`
-	Email            string    `json:"email" binding:"required"`
-	Password         string    `json:"password" binding:"required"`
-	RegistrationDate time.Time `json:"registration_date" binding:"required"`
+	Name                  string    `json:"name" binding:"required"`
+	Email                 string    `json:"email" binding:"required"`
+	Password              string    `json:"password" binding:"required"`
+	RegistrationDate      string    `json:"registration_date" binding:"required"`
+	RegistrationTimestamp time.Time `json:"-"`
 }
 
 type LoginCredentials struct {
