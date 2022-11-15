@@ -2,24 +2,30 @@ package bCrypt
 
 import (
 	"golang.org/x/crypto/bcrypt"
-	"log"
+	"math/rand"
 )
 
-// GeneratePasswordHash handles generating password hash
-// bCrypt hashes password of type byte
-func GeneratePasswordHash(password []byte) string {
-	// default cost is 10
-	hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
-	if err != nil {
-		log.Fatal(err)
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func GenerateSalt(saltSize int) []byte {
+	b := make([]byte, saltSize)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
-	// return stringified password
-	return string(hashedPassword)
+	return b
+}
+
+func GeneratePasswordHash(password []byte, salt []byte) (string, error) {
+	password = append(password, salt...)
+	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
 }
 
 // PasswordCompare handles password hash compare
 func PasswordCompare(password []byte, hashedPassword []byte) error {
 	err := bcrypt.CompareHashAndPassword(hashedPassword, password)
-
 	return err
 }

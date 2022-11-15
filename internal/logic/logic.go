@@ -6,16 +6,16 @@ import (
 	respModel "github.com/PereRohit/util/model"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
+	"github.com/vatsal278/UserManagementService/internal/codes"
 	"github.com/vatsal278/UserManagementService/internal/config"
 	"github.com/vatsal278/UserManagementService/internal/model"
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/UserManagementService/internal/repo/bCrypt"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
-	"github.com/vatsal278/UserManagementService/internal/repo/helpers"
 	"net/http"
 )
 
-//go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_logic.go --package=mock github.com/vatsal278/UserManagementService/internal/logic UserManagementServiceLogicIer
+//go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_logic.go --package=mock github.com/vatsal278/UserManagementService/internal/logic UserMgmtSvcLogicIer
 
 type UserMgmtSvcLogicIer interface {
 	HealthCheck() bool
@@ -26,18 +26,16 @@ type UserMgmtSvcLogicIer interface {
 }
 
 type userMgmtSvcLogic struct {
-	DsSvc        datasource.DataSourceI
-	loginService helpers.LoginService
-	jwtService   jwtSvc.JWTService
-	msgQueue     config.MsgQueue
+	DsSvc      datasource.DataSourceI
+	jwtService jwtSvc.JWTService
+	msgQueue   config.MsgQueue
 }
 
-func NewUserMgmtSvcLogic(ds datasource.DataSourceI, loginSvc helpers.LoginService, jwtService jwtSvc.JWTService, msgQueue config.MsgQueue) UserMgmtSvcLogicIer {
+func NewUserMgmtSvcLogic(ds datasource.DataSourceI, jwtService jwtSvc.JWTService, msgQueue config.MsgQueue) UserMgmtSvcLogicIer {
 	return &userMgmtSvcLogic{
-		DsSvc:        ds,
-		loginService: loginSvc,
-		jwtService:   jwtService,
-		msgQueue:     msgQueue,
+		DsSvc:      ds,
+		jwtService: jwtService,
+		msgQueue:   msgQueue,
 	}
 }
 
@@ -47,111 +45,110 @@ func (l userMgmtSvcLogic) HealthCheck() bool {
 }
 
 func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.Response {
-	if credential.Email == "" || credential.Password == "" || credential.Name == "" {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Provide required details",
-			Data:    nil,
-		}
-	}
 	result, err := l.DsSvc.Get(map[string]interface{}{"email": credential.Email})
 	if err != nil {
-		log.Error(err)
+		log.Error(err.Error())
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
-			Message: "Problem creating account",
+			Message: codes.GetErr(codes.ErrCreatingAccount),
 			Data:    nil,
 		}
 	}
 	if len(result) != 0 {
-		log.Error("Email is already in use")
+		log.Error(codes.GetErr(codes.ErrEmailExists))
 		return &respModel.Response{
 			Status:  http.StatusBadRequest,
-			Message: "Email is already in use",
+			Message: codes.GetErr(codes.ErrEmailExists),
 			Data:    nil,
 		}
 	}
+	salt := bCrypt.GenerateSalt(10)
 
+	hashedPassword, err := bCrypt.GeneratePasswordHash([]byte(credential.Password), salt) //
+	if err != nil {
+		log.Error(err.Error())
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: codes.GetErr(codes.ErrHashPassword),
+			Data:    nil,
+		}
+	}
 	newUser := model.User{
 		Id:           uuid.New().String(),
 		Email:        credential.Email,
-		Password:     credential.Password,
 		Name:         credential.Name,
+		Password:     hashedPassword,
 		Company:      "perennial",
 		RegisteredOn: credential.RegistrationTimestamp,
+		Salt:         string(salt),
 	}
-	salt := bCrypt.GeneratePasswordHash([]byte(newUser.Password))
-	newUser.Salt = salt
 	err = l.DsSvc.Insert(newUser)
 	if err != nil {
 		log.Error(err.Error())
 		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Problem creating an account",
-			Data:    nil,
-		}
-	}
-	userID := fmt.Sprintf(`{"user_id":"%s"}`, newUser.Id)
-	err = l.msgQueue.MsgBroker.PushMsg(userID, l.msgQueue.PubId, l.msgQueue.Channel)
-	if err != nil {
-		log.Error(err)
-		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
-			Message: "Problem notifying account management service",
+			Message: codes.GetErr(codes.ErrCreatingAccount),
 			Data:    nil,
 		}
 	}
-
+	go func() {
+		userID := fmt.Sprintf(`{"user_id":"%s"}`, newUser.Id)
+		err = l.msgQueue.MsgBroker.PushMsg(userID, l.msgQueue.PubId, l.msgQueue.Channel)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		return
+	}()
 	return &respModel.Response{
 		Status:  http.StatusCreated,
-		Message: "SUCCESS",
-		Data:    nil,
+		Message: codes.GetErr(codes.Success),
+		Data:    codes.GetErr(codes.AccActivationInProcess),
 	}
 }
 
 func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCredentials) *respModel.Response {
-	if credential.Email == "" || credential.Password == "" {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Provide required details",
-			Data:    nil,
-		}
-	}
 	result, err := l.DsSvc.Get(map[string]interface{}{"email": credential.Email})
 	if err != nil {
 		log.Error(err)
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
-			Message: "Problem logging into your account",
+			Message: codes.GetErr(codes.ErrFetchingUser),
 			Data:    nil,
 		}
 	}
-	if result[0].Email == "" {
+	if len(result) == 0 {
 		return &respModel.Response{
 			Status:  http.StatusUnauthorized,
-			Message: "User account was not found",
+			Message: codes.GetErr(codes.AccNotFound),
+			Data:    nil,
+		}
+	}
+	hashedPassword, err := bCrypt.GeneratePasswordHash([]byte(credential.Password), []byte(result[0].Salt))
+	if err != nil {
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: codes.GetErr(codes.ErrHashPassword),
+			Data:    nil,
+		}
+	}
+
+	password := append([]byte(credential.Password), []byte(result[0].Salt)...)
+
+	err = bCrypt.PasswordCompare(password, []byte(hashedPassword))
+
+	if err != nil {
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: codes.GetErr(codes.IncorrectPassword),
 			Data:    nil,
 		}
 	}
 	if result[0].Active != true {
 		return &respModel.Response{
 			Status:  http.StatusAccepted,
-			Message: "Problem logging into your account",
-			Data:    "Account activation in progress",
-		}
-	}
-
-	hashedPassword := []byte(result[0].Salt)
-	// Get the password provided in the request.body
-	password := []byte(credential.Password)
-
-	err = bCrypt.PasswordCompare(password, hashedPassword)
-
-	if err != nil {
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "Invalid user credentials",
-			Data:    nil,
+			Message: codes.GetErr(codes.ErrCreatingAccount),
+			Data:    codes.GetErr(codes.AccActivationInProcess),
 		}
 	}
 	id := result[0].Id
@@ -159,7 +156,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 	if err != nil {
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
-			Message: "Unable to generate jwt token",
+			Message: codes.GetErr(codes.ErrGenerateJwt),
 			Data:    nil,
 		}
 	}
@@ -173,13 +170,13 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 		log.Error(err)
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
-			Message: "Problem logging into your account",
+			Message: codes.GetErr(codes.ErrLogging),
 			Data:    nil,
 		}
 	}
 	return &respModel.Response{
 		Status:  http.StatusOK,
-		Message: "SUCCESS",
+		Message: codes.GetErr(codes.Success),
 		Data:    nil,
 	}
 }

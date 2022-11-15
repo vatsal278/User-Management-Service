@@ -1,6 +1,11 @@
 package handler
 
 import (
+	"bytes"
+	"github.com/vatsal278/UserManagementService/internal/config"
+	"github.com/vatsal278/UserManagementService/internal/repo/authentication"
+	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/PereRohit/util/testutil"
@@ -23,8 +28,7 @@ func Test_userManagementService_HealthCheck(t *testing.T) {
 		{
 			name: "Success",
 			setup: func() userMgmtSvc {
-				mockLogic := mock.NewMockUserManagementServiceLogicIer(mockCtrl)
-
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
 				mockLogic.EXPECT().HealthCheck().
 					Return(true).Times(1)
 
@@ -59,6 +63,40 @@ func Test_userManagementService_HealthCheck(t *testing.T) {
 			if diff != "" {
 				t.Error(testutil.Callers(), diff)
 			}
+		})
+	}
+}
+
+func Test_userManagementServiceLogic_HealthCheck(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	tests := []struct {
+		name  string
+		setup func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue)
+		want  func(recorder httptest.ResponseRecorder)
+	}{
+		{
+			name: "Success",
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue) {
+				mockLogic := mock.NewMockUserManagementServiceHandler(mockCtrl)
+				mockLogic.
+					mockDs.EXPECT().HealthCheck().Times(1).
+					Return(true)
+
+				return mockDs, nil, config.MsgQueue{}
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest("POST", "/register/publisher", bytes.NewBuffer(jsonValue))
+			rec := NewUserMgmtSvc(tt.setup())
+			rec.SignUp(w, r)
+			want(w)
+
 		})
 	}
 }
