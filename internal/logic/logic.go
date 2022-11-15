@@ -10,7 +10,7 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/config"
 	"github.com/vatsal278/UserManagementService/internal/model"
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
-	"github.com/vatsal278/UserManagementService/internal/repo/bCrypt"
+	"github.com/vatsal278/UserManagementService/internal/repo/crypto"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"net/http"
 )
@@ -62,9 +62,15 @@ func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.
 			Data:    nil,
 		}
 	}
-	salt := bCrypt.GenerateSalt(10)
+	newUser := model.User{
+		Id:           uuid.New().String(),
+		Email:        credential.Email,
+		Name:         credential.Name,
+		Company:      "perennial",
+		RegisteredOn: credential.RegistrationTimestamp,
+	}
 
-	hashedPassword, err := bCrypt.GeneratePasswordHash([]byte(credential.Password), salt) //
+	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(newUser.Id))
 	if err != nil {
 		log.Error(err.Error())
 		return &respModel.Response{
@@ -73,15 +79,8 @@ func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.
 			Data:    nil,
 		}
 	}
-	newUser := model.User{
-		Id:           uuid.New().String(),
-		Email:        credential.Email,
-		Name:         credential.Name,
-		Password:     hashedPassword,
-		Company:      "perennial",
-		RegisteredOn: credential.RegistrationTimestamp,
-		Salt:         string(salt),
-	}
+	newUser.Password = hashedPassword
+
 	err = l.DsSvc.Insert(newUser)
 	if err != nil {
 		log.Error(err.Error())
@@ -124,7 +123,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-	hashedPassword, err := bCrypt.GeneratePasswordHash([]byte(credential.Password), []byte(result[0].Salt))
+	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(result[0].Id))
 	if err != nil {
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
@@ -132,15 +131,19 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-
-	password := append([]byte(credential.Password), []byte(result[0].Salt)...)
-
-	err = bCrypt.PasswordCompare(password, []byte(hashedPassword))
-
+	result, err = l.DsSvc.Get(map[string]interface{}{"email": credential.Email, "password": hashedPassword})
 	if err != nil {
+		log.Error(err)
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
-			Message: codes.GetErr(codes.IncorrectPassword),
+			Message: codes.GetErr(codes.ErrFetchingUser),
+			Data:    nil,
+		}
+	}
+	if len(result) == 0 {
+		return &respModel.Response{
+			Status:  http.StatusUnauthorized,
+			Message: codes.GetErr(codes.PassDontMatch),
 			Data:    nil,
 		}
 	}
@@ -161,8 +164,9 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 		}
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:  "token",
-		Value: jwtToken,
+		Name:   "token",
+		Value:  jwtToken,
+		MaxAge: 60 * 60,
 	})
 	newActiveDvc := result[0].ActiveDevices + 1
 	err = l.DsSvc.Update(map[string]interface{}{"active_devices": newActiveDvc}, map[string]interface{}{"email": credential.Email})

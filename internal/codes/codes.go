@@ -25,6 +25,7 @@ const (
 	ErrHashPassword
 	ErrFetchingUser
 	AccNotFound
+	PassDontMatch
 	Success
 	AccActivationInProcess
 	IncorrectPassword
@@ -57,6 +58,7 @@ var errCodes = map[errCode]string{
 	AccActivationInProcess: "Account activation in progress",
 	ErrFetchingUser:        "Problem fetching your account",
 	AccNotFound:            "User account was not found",
+	PassDontMatch:          "Password doesnt match",
 	IncorrectPassword:      "Incorrect Password",
 	ErrGenerateJwt:         "Unable to generate jwt token",
 	ErrLogging:             "Problem logging into your account",

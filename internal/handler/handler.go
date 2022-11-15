@@ -18,7 +18,7 @@ import (
 
 const UserManagementServiceName = "userManagementService"
 
-//go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_handler.go --package=mock github.com/vatsal278/UserManagementService/internal/handler UserManagementServiceHandler
+//go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_handler.go --package=mock github.com/vatsal278/UserManagementService/internal/handler UserMgmtSvcHandler
 
 type UserMgmtSvcHandler interface {
 	HealthChecker
@@ -54,6 +54,7 @@ func (svc userMgmtSvc) HealthCheck() (svcName string, msg string, stat bool) {
 	return
 }
 func (svc userMgmtSvc) SignUp(w http.ResponseWriter, r *http.Request) {
+
 	var credential model.SignUpCredentials
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -67,7 +68,7 @@ func (svc userMgmtSvc) SignUp(w http.ResponseWriter, r *http.Request) {
 		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrUnmarshall), nil)
 		return
 	}
-	err = validator.Validate(credential)
+	err = validator.Validate(&credential)
 	if err != nil {
 		log.Error(err)
 		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrValidate), nil)

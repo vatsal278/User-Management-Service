@@ -224,8 +224,8 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
 				var users []model.User
 				users = append(users, model.User{Email: "vatsal@gmail.com", Id: "123", Active: true})
-				mockDs.EXPECT().Get(map[string]interface{}{"email": "vatsal@gmail.com"}).Times(1).Return(users, nil)
-
+				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(users, nil)
+				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(users, nil)
 				mockDs.EXPECT().Update(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				mockJwtSvc.EXPECT().GenerateToken(jwt.SigningMethodHS256, "123", time.Nanosecond*6).Return("", nil)
 				return mockDs, mockJwtSvc, config.MsgQueue{MsgBroker: sdk.NewMsgBrokerSvc("http://localhost:9095")}
@@ -294,6 +294,58 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 			},
 		},
 		{
+			name: "Failure :: Login :: Get from db failure",
+			credentials: model.LoginCredentials{
+				Email:    "vatsal@gmail.com",
+				Password: "Abcde@12345",
+			},
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue) {
+				mockDs := mock.NewMockDataSourceI(mockCtrl)
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				var users []model.User
+				users = append(users, model.User{Email: "vatsal@gmail.com", Id: "123"})
+				mockDs.EXPECT().Get(map[string]interface{}{"email": "vatsal@gmail.com"}).Times(1).Return(users, nil)
+				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(nil, errors.New(""))
+				return mockDs, mockJwtSvc, config.MsgQueue{MsgBroker: sdk.NewMsgBrokerSvc("http://localhost:9095")}
+			},
+			want: func(resp *respModel.Response) {
+				temp := respModel.Response{
+					Status:  http.StatusInternalServerError,
+					Message: codes.GetErr(codes.ErrFetchingUser),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(resp, &temp) {
+					t.Errorf("Want: %v, Got: %v", temp, resp)
+				}
+			},
+		},
+		{
+			name: "Failure :: Login :: Password doesnt match",
+			credentials: model.LoginCredentials{
+				Email:    "vatsal@gmail.com",
+				Password: "Abcde@12345",
+			},
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue) {
+				mockDs := mock.NewMockDataSourceI(mockCtrl)
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				var users []model.User
+				users = append(users, model.User{Email: "vatsal@gmail.com", Id: "123"})
+				mockDs.EXPECT().Get(map[string]interface{}{"email": "vatsal@gmail.com"}).Times(1).Return(users, nil)
+				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(nil, nil)
+				return mockDs, mockJwtSvc, config.MsgQueue{MsgBroker: sdk.NewMsgBrokerSvc("http://localhost:9095")}
+			},
+			want: func(resp *respModel.Response) {
+				temp := respModel.Response{
+					Status:  http.StatusUnauthorized,
+					Message: codes.GetErr(codes.PassDontMatch),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(resp, &temp) {
+					t.Errorf("Want: %v, Got: %v", temp, resp)
+				}
+			},
+		},
+		{
 			name: "Failure :: Login :: Acc. Activation in progress",
 			credentials: model.LoginCredentials{
 				Email:    "vatsal@gmail.com",
@@ -305,6 +357,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				var users []model.User
 				users = append(users, model.User{Email: "vatsal@gmail.com", Id: "123", Active: false, Salt: "12345cd"})
 				mockDs.EXPECT().Get(map[string]interface{}{"email": "vatsal@gmail.com"}).Times(1).Return(users, nil)
+				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(users, nil)
 				//	mockJwtSvc.EXPECT().GenerateToken(jwt.SigningMethodHS256, "123", time.Nanosecond*6).Return("", errors.New(""))
 
 				return mockDs, mockJwtSvc, config.MsgQueue{MsgBroker: sdk.NewMsgBrokerSvc("http://localhost:9095")}
@@ -333,7 +386,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				users = append(users, model.User{Email: "vatsal@gmail.com", Id: "123", Active: true, Salt: "12345cd"})
 				mockDs.EXPECT().Get(map[string]interface{}{"email": "vatsal@gmail.com"}).Times(1).Return(users, nil)
 				mockJwtSvc.EXPECT().GenerateToken(jwt.SigningMethodHS256, "123", time.Nanosecond*6).Return("", errors.New(""))
-
+				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(users, nil)
 				return mockDs, mockJwtSvc, config.MsgQueue{MsgBroker: sdk.NewMsgBrokerSvc("http://localhost:9095")}
 			},
 			want: func(resp *respModel.Response) {
@@ -357,11 +410,11 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				mockDs := mock.NewMockDataSourceI(mockCtrl)
 				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
 				var users []model.User
-				users = append(users, model.User{Email: "vatsal@gmail.com", Id: "123", Active: true, Salt: "12345cd"})
+				users = append(users, model.User{Email: "vatsal@gmail.com", Id: "123", Active: true})
 				mockDs.EXPECT().Get(map[string]interface{}{"email": "vatsal@gmail.com"}).Times(1).Return(users, nil)
 				mockJwtSvc.EXPECT().GenerateToken(jwt.SigningMethodHS256, "123", time.Nanosecond*6).Return("", nil)
 				mockDs.EXPECT().Update(gomock.Any(), gomock.Any()).Times(1).Return(errors.New(""))
-
+				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(users, nil)
 				return mockDs, mockJwtSvc, config.MsgQueue{MsgBroker: sdk.NewMsgBrokerSvc("http://localhost:9095")}
 			},
 			want: func(resp *respModel.Response) {
