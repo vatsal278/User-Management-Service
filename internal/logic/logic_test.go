@@ -203,6 +203,7 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 		})
 	}
 }
+
 func Test_userManagementServiceLogic_Login(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -337,7 +338,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 			want: func(resp *respModel.Response) {
 				temp := respModel.Response{
 					Status:  http.StatusUnauthorized,
-					Message: codes.GetErr(codes.PassDontMatch),
+					Message: codes.GetErr(codes.InvaliCredentials),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(resp, &temp) {
@@ -365,7 +366,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 			want: func(resp *respModel.Response) {
 				temp := respModel.Response{
 					Status:  http.StatusAccepted,
-					Message: codes.GetErr(codes.ErrCreatingAccount),
+					Message: codes.GetErr(codes.ErrLogging),
 					Data:    codes.GetErr(codes.AccActivationInProcess),
 				}
 				if !reflect.DeepEqual(resp, &temp) {

@@ -37,16 +37,17 @@ func getSecretKey(secret string) string {
 	return secret
 }
 
+//use int for validity
 func (service *jwtService) GenerateToken(signingMethod jwt.SigningMethod, userId string, validity time.Duration) (string, error) {
 	claims := &authCustomClaims{
 		userId,
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 24 * 30 * validity).Unix(),
+			ExpiresAt: time.Now().Add(validity).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
 	token := jwt.NewWithClaims(signingMethod, claims)
-
+	time.ParseDuration("15m")
 	t, err := token.SignedString([]byte(service.secretKey))
 	if err != nil {
 		log.Error(err)

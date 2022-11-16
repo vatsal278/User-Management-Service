@@ -13,6 +13,7 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/repo/crypto"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"net/http"
+	"time"
 )
 
 //go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_logic.go --package=mock github.com/vatsal278/UserManagementService/internal/logic UserMgmtSvcLogicIer
@@ -143,19 +144,27 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 	if len(result) == 0 {
 		return &respModel.Response{
 			Status:  http.StatusUnauthorized,
-			Message: codes.GetErr(codes.PassDontMatch),
+			Message: codes.GetErr(codes.InvaliCredentials),
 			Data:    nil,
 		}
 	}
 	if result[0].Active != true {
 		return &respModel.Response{
 			Status:  http.StatusAccepted,
-			Message: codes.GetErr(codes.ErrCreatingAccount),
+			Message: codes.GetErr(codes.ErrLogging),
 			Data:    codes.GetErr(codes.AccActivationInProcess),
 		}
 	}
 	id := result[0].Id
-	jwtToken, err := l.jwtService.GenerateToken(jwt.SigningMethodHS256, id, 6)
+	duration, err := time.ParseDuration("6m")
+	if err != nil {
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: codes.GetErr(codes.ErrDuration),
+			Data:    nil,
+		}
+	}
+	jwtToken, err := l.jwtService.GenerateToken(jwt.SigningMethodHS256, id, duration)
 	if err != nil {
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,

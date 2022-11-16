@@ -163,6 +163,33 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 			},
 		},
 		{
+			name: "Failure :: signUp:: json unmarshall failure",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer([]byte("")))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrUnmarshall),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
 			name: "Failure :: SignUp:: Validate failure",
 			setup: func() (*userMgmtSvc, *http.Request) {
 				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
@@ -321,6 +348,33 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
 					Message: codes.GetErr(codes.ErrReadingReqBody),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: Login:: json unmarshall failure",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				r := httptest.NewRequest("POST", "/login", bytes.NewBuffer([]byte("")))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrUnmarshall),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {

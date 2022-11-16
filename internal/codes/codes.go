@@ -35,6 +35,8 @@ const (
 	ErrUnmarshall
 	ErrParseRegDate
 	ErrValidate
+	InvaliCredentials
+	ErrDuration
 )
 
 var errCodes = map[errCode]string{
@@ -66,6 +68,8 @@ var errCodes = map[errCode]string{
 	ErrUnmarshall:          "Unable to unmarshal request body",
 	ErrParseRegDate:        "Unable to parse registration date",
 	ErrValidate:            "Validation of fields failed",
+	InvaliCredentials:      "Invalid user credentials",
+	ErrDuration:            "Error parsing time duration",
 }
 
 func GetErr(code errCode) string {

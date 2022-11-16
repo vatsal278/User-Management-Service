@@ -1,14 +1,17 @@
 package crypto
 
 import (
-	"golang.org/x/crypto/bcrypt"
+	"crypto/sha512"
+	"encoding/hex"
 )
 
 func GeneratePasswordHash(password []byte, salt []byte) (string, error) {
 	password = append(password, salt...)
-	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), nil
+	var sha512Hasher = sha512.New()
+	sha512Hasher.Write(password)
+	var hashedPasswordBytes = sha512Hasher.Sum(nil)
+	// Convert the hashed password to a hex string
+	hash := hex.EncodeToString(hashedPasswordBytes)
+
+	return hash, nil
 }
