@@ -26,5 +26,10 @@
     "new_account_channel": "new.account.channel",
     "account_activation_channel": "account.activation.channel"
   },
-  "secret_key": "secret"
+  "secret_key": "secret",
+  "cookie": {
+    "name": "token",
+    "expiry": 900,
+    "path": "/user"
+  }
 }

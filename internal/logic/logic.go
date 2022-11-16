@@ -30,13 +30,15 @@ type userMgmtSvcLogic struct {
 	DsSvc      datasource.DataSourceI
 	jwtService jwtSvc.JWTService
 	msgQueue   config.MsgQueue
+	cookie     config.CookieStruct
 }
 
-func NewUserMgmtSvcLogic(ds datasource.DataSourceI, jwtService jwtSvc.JWTService, msgQueue config.MsgQueue) UserMgmtSvcLogicIer {
+func NewUserMgmtSvcLogic(ds datasource.DataSourceI, jwtService jwtSvc.JWTService, msgQueue config.MsgQueue, cookie config.CookieStruct) UserMgmtSvcLogicIer {
 	return &userMgmtSvcLogic{
 		DsSvc:      ds,
 		jwtService: jwtService,
 		msgQueue:   msgQueue,
+		cookie:     cookie,
 	}
 }
 
@@ -172,10 +174,14 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
+	log.Info(l.cookie)
 	http.SetCookie(w, &http.Cookie{
-		Name:   "token",
-		Value:  jwtToken,
-		MaxAge: 60 * 60,
+		Name:     l.cookie.Name,
+		Value:    jwtToken,
+		MaxAge:   l.cookie.Expiry,
+		Path:     l.cookie.Path,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
 	})
 	newActiveDvc := result[0].ActiveDevices + 1
 	err = l.DsSvc.Update(map[string]interface{}{"active_devices": newActiveDvc}, map[string]interface{}{"email": credential.Email})

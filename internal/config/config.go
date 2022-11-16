@@ -16,9 +16,15 @@ type Config struct {
 	ServiceRouteVersion string              `json:"service_route_version"`
 	ServerConfig        config.ServerConfig `json:"server_config"`
 	// add custom config structs below for any internal services
-	DataBase     DbCfg       `json:"db_svc"`
-	MessageQueue MsgQueueCfg `json:"msg_queue"`
-	SecretKey    string      `json:"secret_key"`
+	DataBase     DbCfg        `json:"db_svc"`
+	MessageQueue MsgQueueCfg  `json:"msg_queue"`
+	SecretKey    string       `json:"secret_key"`
+	Cookie       CookieStruct `json:"cookie"`
+}
+type CookieStruct struct {
+	Name   string `json:"name"`
+	Expiry int    `json:"expiry"`
+	Path   string `json:"path"`
 }
 type MsgQueueCfg struct {
 	SvcUrl                  string   `json:"service_url"`

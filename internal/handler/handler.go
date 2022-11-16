@@ -32,9 +32,9 @@ type userMgmtSvc struct {
 	logic logic.UserMgmtSvcLogicIer
 }
 
-func NewUserMgmtSvc(ds datasource.DataSourceI, jwtService jwtSvc.JWTService, msgQueue config.MsgQueue) UserMgmtSvcHandler {
+func NewUserMgmtSvc(ds datasource.DataSourceI, jwtService jwtSvc.JWTService, msgQueue config.MsgQueue, cookie config.CookieStruct) UserMgmtSvcHandler {
 	svc := &userMgmtSvc{
-		logic: logic.NewUserMgmtSvcLogic(ds, jwtService, msgQueue),
+		logic: logic.NewUserMgmtSvcLogic(ds, jwtService, msgQueue, cookie),
 	}
 	AddHealthChecker(svc)
 	return svc
