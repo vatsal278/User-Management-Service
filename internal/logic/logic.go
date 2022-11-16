@@ -13,7 +13,6 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/repo/crypto"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"net/http"
-	"time"
 )
 
 //go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_logic.go --package=mock github.com/vatsal278/UserManagementService/internal/logic UserMgmtSvcLogicIer
@@ -150,6 +149,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
+	log.Info(l.cookie)
 	if result[0].Active != true {
 		return &respModel.Response{
 			Status:  http.StatusAccepted,
@@ -158,7 +158,6 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 		}
 	}
 	id := result[0].Id
-	duration, err := time.ParseDuration("6m")
 	if err != nil {
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
@@ -166,7 +165,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-	jwtToken, err := l.jwtService.GenerateToken(jwt.SigningMethodHS256, id, duration)
+	jwtToken, err := l.jwtService.GenerateToken(jwt.SigningMethodHS256, id, int64(l.cookie.Expiry))
 	if err != nil {
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
@@ -174,7 +173,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-	log.Info(l.cookie)
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     l.cookie.Name,
 		Value:    jwtToken,
