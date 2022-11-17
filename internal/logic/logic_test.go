@@ -228,7 +228,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(users, nil)
 				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(users, nil)
 				mockDs.EXPECT().Update(gomock.Any(), gomock.Any()).Times(1).Return(nil)
-				mockJwtSvc.EXPECT().GenerateToken(jwt.SigningMethodHS256, "123", int64(360)).Return("", nil)
+				mockJwtSvc.EXPECT().GenerateToken(jwt.SigningMethodHS256, "123", gomock.Any()).Return("", nil)
 				return mockDs, mockJwtSvc, config.MsgQueue{MsgBroker: sdk.NewMsgBrokerSvc("http://localhost:9095")}, config.CookieStruct{Expiry: 360}
 			},
 			want: func(resp *respModel.Response) {
