@@ -6,6 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestJwtService_GenerateToken(t *testing.T) {
@@ -23,8 +24,12 @@ func TestJwtService_GenerateToken(t *testing.T) {
 				if !reflect.DeepEqual(err, nil) {
 					t.Errorf("Want: %v, Got: %v", nil, err)
 				}
-				t.Log(token)
-				validateToken, _ := jwtSvc.ValidateToken(token)
+				validateToken, err := jwtSvc.ValidateToken(token)
+				if err != nil {
+					t.Log(err)
+					t.Fail()
+					return
+				}
 				mapClaims, ok := validateToken.Claims.(jwt.MapClaims)
 				if !ok {
 					t.Log("failed to assert claims")
@@ -32,7 +37,6 @@ func TestJwtService_GenerateToken(t *testing.T) {
 					return
 				}
 				userId := mapClaims["user_id"]
-				t.Log(validateToken.Claims.Valid())
 				if !reflect.DeepEqual(userId, "1") {
 					t.Errorf("Want: %v, Got: %v", "1", userId)
 				}
@@ -53,7 +57,7 @@ func TestJwtService_GenerateToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			jwtSvc := JWTAuthService("")
-			token, err := jwtSvc.GenerateToken(tt.signingMethod, "1", 10)
+			token, err := jwtSvc.GenerateToken(tt.signingMethod, "1", time.Duration(3)*time.Second)
 
 			tt.validator(jwtSvc, token, err)
 

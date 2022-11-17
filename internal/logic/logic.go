@@ -13,6 +13,7 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/repo/crypto"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"net/http"
+	"time"
 )
 
 //go:generate mockgen --build_flags=--mod=mod --destination=./../../pkg/mock/mock_logic.go --package=mock github.com/vatsal278/UserManagementService/internal/logic UserMgmtSvcLogicIer
@@ -165,7 +166,8 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-	jwtToken, err := l.jwtService.GenerateToken(jwt.SigningMethodHS256, id, int64(l.cookie.Expiry))
+	// pass the
+	jwtToken, err := l.jwtService.GenerateToken(jwt.SigningMethodHS256, id, l.cookie.Expiry)
 	if err != nil {
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
@@ -173,15 +175,17 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-
+	//set the max age and expiry
 	http.SetCookie(w, &http.Cookie{
 		Name:     l.cookie.Name,
 		Value:    jwtToken,
-		MaxAge:   l.cookie.Expiry,
+		MaxAge:   int(l.cookie.Expiry),
 		Path:     l.cookie.Path,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Now().Add(l.cookie.Expiry),
 	})
+
 	newActiveDvc := result[0].ActiveDevices + 1
 	err = l.DsSvc.Update(map[string]interface{}{"active_devices": newActiveDvc}, map[string]interface{}{"email": credential.Email})
 	if err != nil {

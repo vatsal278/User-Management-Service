@@ -8,6 +8,8 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/model"
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/msgbroker/pkg/sdk"
+	"time"
+
 	//jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"log"
 )
@@ -22,9 +24,10 @@ type Config struct {
 	Cookie       CookieStruct `json:"cookie"`
 }
 type CookieStruct struct {
-	Name   string `json:"name"`
-	Expiry int    `json:"expiry"`
-	Path   string `json:"path"`
+	Name      string        `json:"name"`
+	Expiry    time.Duration `json:"-"`
+	ExpiryStr string        `json:"expiry"`
+	Path      string        `json:"path"`
 }
 type MsgQueueCfg struct {
 	SvcUrl                  string   `json:"service_url"`
@@ -103,6 +106,10 @@ func InitSvcConfig(cfg Config) *SvcConfig {
 	jwtSvc := jwtSvc.JWTAuthService(cfg.SecretKey)
 	msgBrokerSvc := sdk.NewMsgBrokerSvc(cfg.MessageQueue.SvcUrl)
 	id, err := msgBrokerSvc.RegisterPub(cfg.MessageQueue.NewAccountChannel)
+	if err != nil {
+		panic(err.Error())
+	}
+	cfg.Cookie.Expiry, err = time.ParseDuration(cfg.Cookie.ExpiryStr)
 	if err != nil {
 		panic(err.Error())
 	}

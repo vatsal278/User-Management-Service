@@ -29,7 +29,7 @@
   "secret_key": "secret",
   "cookie": {
     "name": "token",
-    "expiry": 900,
+    "expiry": "30s",
     "path": "/user"
   }
 }

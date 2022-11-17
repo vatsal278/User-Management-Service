@@ -10,7 +10,7 @@ import (
 //go:generate mockgen --build_flags=--mod=mod --destination=./../../../pkg/mock/mock_jwt.go --package=mock github.com/vatsal278/UserManagementService/internal/repo/authentication JWTService
 
 type JWTService interface {
-	GenerateToken(signingMethod jwt.SigningMethod, userId string, validity int64) (string, error)
+	GenerateToken(signingMethod jwt.SigningMethod, userId string, validity time.Duration) (string, error)
 	ValidateToken(token string) (*jwt.Token, error)
 }
 
@@ -37,13 +37,13 @@ func getSecretKey(secret string) string {
 	return secret
 }
 
-//use int for validity
-func (service *jwtService) GenerateToken(signingMethod jwt.SigningMethod, userId string, validity int64) (string, error) {
+func (service *jwtService) GenerateToken(signingMethod jwt.SigningMethod, userId string, validity time.Duration) (string, error) {
+	var currentTime = time.Now().UTC()
 	claims := &authCustomClaims{
 		userId,
 		jwt.StandardClaims{
-			ExpiresAt: validity,
-			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: currentTime.Add(validity).Unix(),
+			IssuedAt:  currentTime.Unix(),
 		},
 	}
 	token := jwt.NewWithClaims(signingMethod, claims)

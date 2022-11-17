@@ -6,6 +6,7 @@ package mock
 
 import (
 	reflect "reflect"
+	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	gomock "github.com/golang/mock/gomock"
@@ -35,7 +36,7 @@ func (m *MockJWTService) EXPECT() *MockJWTServiceMockRecorder {
 }
 
 // GenerateToken mocks base method.
-func (m *MockJWTService) GenerateToken(arg0 jwt.SigningMethod, arg1 string, arg2 int64) (string, error) {
+func (m *MockJWTService) GenerateToken(signingMethod jwt.SigningMethod, userId string, validity time.Duration) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GenerateToken", arg0, arg1, arg2)
 	ret0, _ := ret[0].(string)
