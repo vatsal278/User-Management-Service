@@ -112,10 +112,14 @@ func (svc userMgmtSvc) Activation(w http.ResponseWriter, r *http.Request) {
 	var data map[string]string
 	bytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		log.Error(err)
+		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrReadingReqBody), nil)
 		return
 	}
 	err = json.Unmarshal(bytes, &data)
 	if err != nil {
+		log.Error(err)
+		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrUnmarshall), nil)
 		return
 	}
 	resp := svc.logic.Activate(data["user_id"])
