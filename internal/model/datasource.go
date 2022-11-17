@@ -40,10 +40,3 @@ const Schema = `
 			primary key (email)
 		);
 `
-
-type UserDetails struct {
-	Name      string
-	Email     string
-	Company   string
-	LastLogin time.Time
-}

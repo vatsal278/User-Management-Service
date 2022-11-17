@@ -38,11 +38,12 @@ func getSecretKey(secret string) string {
 }
 
 func (service *jwtService) GenerateToken(signingMethod jwt.SigningMethod, userId string, validity time.Duration) (string, error) {
+	var currentTime = time.Now().UTC()
 	claims := &authCustomClaims{
 		userId,
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 24 * 30 * validity).Unix(),
-			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: currentTime.Add(validity).Unix(),
+			IssuedAt:  currentTime.Unix(),
 		},
 	}
 	token := jwt.NewWithClaims(signingMethod, claims)

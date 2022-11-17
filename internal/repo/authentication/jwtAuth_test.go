@@ -6,6 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestJwtService_GenerateToken(t *testing.T) {
@@ -56,7 +57,7 @@ func TestJwtService_GenerateToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			jwtSvc := JWTAuthService("")
-			token, err := jwtSvc.GenerateToken(tt.signingMethod, "1", 1)
+			token, err := jwtSvc.GenerateToken(tt.signingMethod, "1", time.Duration(3)*time.Second)
 
 			tt.validator(jwtSvc, token, err)
 
@@ -73,7 +74,11 @@ func TestJwtService_ValidateToken(t *testing.T) {
 		{
 			name: "SUCCESS:: Validate Token",
 			setupFunc: func() string {
-				token, _ := jwtSvc.GenerateToken(jwt.SigningMethodHS256, "1", 1)
+				token, err := jwtSvc.GenerateToken(jwt.SigningMethodHS256, "1", time.Duration(1)*time.Second)
+				if err != nil {
+					t.Log(err)
+					t.Fail()
+				}
 				return token
 			},
 			validator: func(token *jwt.Token, err error) {
@@ -84,6 +89,23 @@ func TestJwtService_ValidateToken(t *testing.T) {
 				userId := mapClaims["user_id"]
 				if !reflect.DeepEqual(userId, "1") {
 					t.Errorf("Want: %v, Got: %v", "1", userId)
+				}
+			},
+		},
+		{
+			name: "SUCCESS:: Validate Token ::Expired token",
+			setupFunc: func() string {
+				token, err := jwtSvc.GenerateToken(jwt.SigningMethodHS256, "1", time.Duration(1)*time.Second)
+				if err != nil {
+					t.Log(err)
+					t.Fail()
+				}
+				time.Sleep(time.Duration(2) * time.Second)
+				return token
+			},
+			validator: func(token *jwt.Token, err error) {
+				if !reflect.DeepEqual(err.Error(), errors.New("Token is expired").Error()) {
+					t.Errorf("Want: %v, Got: %v", errors.New("Token is expired ").Error(), err.Error())
 				}
 			},
 		},

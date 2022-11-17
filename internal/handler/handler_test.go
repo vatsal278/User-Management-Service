@@ -1,13 +1,28 @@
 package handler
 
 import (
-	"testing"
-
+	"bytes"
+	"encoding/json"
+	"errors"
+	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/testutil"
 	"github.com/golang/mock/gomock"
+	"github.com/vatsal278/UserManagementService/internal/codes"
+	"github.com/vatsal278/UserManagementService/internal/model"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"testing"
 
 	"github.com/vatsal278/UserManagementService/pkg/mock"
 )
+
+type Reader string
+
+func (Reader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("test error")
+}
 
 func Test_userManagementService_HealthCheck(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
@@ -23,8 +38,7 @@ func Test_userManagementService_HealthCheck(t *testing.T) {
 		{
 			name: "Success",
 			setup: func() userMgmtSvc {
-				mockLogic := mock.NewMockUserManagementServiceLogicIer(mockCtrl)
-
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
 				mockLogic.EXPECT().HealthCheck().
 					Return(true).Times(1)
 
@@ -59,6 +73,356 @@ func Test_userManagementService_HealthCheck(t *testing.T) {
 			if diff != "" {
 				t.Error(testutil.Callers(), diff)
 			}
+		})
+	}
+}
+
+func Test_userManagementServiceLogic_SignUp(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	tests := []struct {
+		name  string
+		model model.SignUpCredentials
+		setup func() (*userMgmtSvc, *http.Request)
+		want  func(recorder httptest.ResponseRecorder)
+	}{
+		{
+			name: "Success",
+			model: model.SignUpCredentials{
+				Name:             "Vatsal",
+				Email:            "vatsal@gmail.com",
+				Password:         "Abc@123",
+				RegistrationDate: "15-11-2022 00:00:00",
+			},
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				mockLogic.EXPECT().Signup(gomock.Any()).Times(1).Return(&respModel.Response{
+					Status:  http.StatusCreated,
+					Message: codes.GetErr(codes.Success),
+					Data:    codes.GetErr(codes.AccActivationInProcess),
+				})
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.SignUpCredentials{
+					Name:             "Vatsal",
+					Email:            "vatsal@gmail.com",
+					Password:         "Abc@123",
+					RegistrationDate: "15-11-2022 00:00:00",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusCreated,
+					Message: codes.GetErr(codes.Success),
+					Data:    codes.GetErr(codes.AccActivationInProcess),
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+
+			},
+		},
+		{
+			name: "Failure :: signUp:: Read all failure",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				r := httptest.NewRequest("POST", "/register", Reader(""))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrReadingReqBody),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: signUp:: json unmarshall failure",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer([]byte("")))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrUnmarshall),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: SignUp:: Validate failure",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.SignUpCredentials{
+					Name:             "",
+					Email:            "vatsal@gmail.com",
+					Password:         "Abc@123",
+					RegistrationDate: "15-11-2022 00:00:00",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrValidate),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: SignUp :: time parse failure",
+			model: model.SignUpCredentials{
+				Name:             "Vatsal",
+				Email:            "vatsal@gmail.com",
+				Password:         "Abc@123",
+				RegistrationDate: "15-11-2022 00:00:00",
+			},
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.SignUpCredentials{
+					Name:             "Vatsal",
+					Email:            "vatsal@gmail.com",
+					Password:         "Abc@123",
+					RegistrationDate: "ABC",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrParseRegDate),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			x, r := tt.setup()
+			x.SignUp(w, r)
+			tt.want(*w)
+		})
+	}
+}
+
+func Test_userManagementServiceLogic_Login(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	tests := []struct {
+		name  string
+		model model.LoginCredentials
+		setup func() (*userMgmtSvc, *http.Request)
+		want  func(recorder httptest.ResponseRecorder)
+	}{
+		{
+			name: "Success",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				mockLogic.EXPECT().Login(gomock.Any(), gomock.Any()).Times(1).Return(&respModel.Response{
+					Status:  http.StatusOK,
+					Message: codes.GetErr(codes.Success),
+					Data:    nil,
+				})
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.LoginCredentials{
+					Email:    "vatsal@gmail.com",
+					Password: "Abc@123",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/login", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusOK,
+					Message: codes.GetErr(codes.Success),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: Login:: Read all failure",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				r := httptest.NewRequest("POST", "/login", Reader(""))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrReadingReqBody),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: Login:: json unmarshall failure",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				r := httptest.NewRequest("POST", "/login", bytes.NewBuffer([]byte("")))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrUnmarshall),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: Login:: Validate failure",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.LoginCredentials{
+					Email:    "",
+					Password: "Abc@123",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrValidate),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			x, r := tt.setup()
+			x.Login(w, r)
+			tt.want(*w)
 		})
 	}
 }
