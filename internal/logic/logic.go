@@ -150,7 +150,6 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-	log.Info(l.cookie)
 	if result[0].Active != true {
 		return &respModel.Response{
 			Status:  http.StatusAccepted,
@@ -166,7 +165,6 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-	// pass the
 	jwtToken, err := l.jwtService.GenerateToken(jwt.SigningMethodHS256, id, l.cookie.Expiry)
 	if err != nil {
 		return &respModel.Response{
@@ -175,7 +173,6 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-	//set the max age and expiry
 	http.SetCookie(w, &http.Cookie{
 		Name:     l.cookie.Name,
 		Value:    jwtToken,
