@@ -536,3 +536,59 @@ func Test_userManagementServiceLogic_Activate(t *testing.T) {
 		})
 	}
 }
+func Test_userManagementServiceLogic_User(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	tests := []struct {
+		name  string
+		model model.LoginCredentials
+		setup func() (*userMgmtSvc, *http.Request)
+		want  func(recorder httptest.ResponseRecorder)
+	}{
+		{
+			name: "Success",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				mockLogic.EXPECT().UserData(gomock.Any()).Times(1).Return(&respModel.Response{
+					Status:  http.StatusOK,
+					Message: codes.GetErr(codes.Success),
+					Data:    nil,
+				})
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(map[string]interface{}{"user_id": "123"})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("PUT", "/activate", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusOK,
+					Message: codes.GetErr(codes.Success),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			x, r := tt.setup()
+			x.UserDetails(w, r)
+			tt.want(*w)
+		})
+	}
+}

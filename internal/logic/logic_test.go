@@ -85,8 +85,8 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 			want: func(resp *respModel.Response) {
 				temp := respModel.Response{
 					Status:  http.StatusCreated,
-					Message: codes.GetErr(codes.Success),
-					Data:    codes.GetErr(codes.AccActivationInProcess),
+					Message: "SUCCESS",
+					Data:    "Account activation in progress",
 				}
 				if !reflect.DeepEqual(resp, &temp) {
 					t.Errorf("Want: %v, Got: %v", temp, resp)
@@ -110,8 +110,8 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 			want: func(resp *respModel.Response) {
 				temp := respModel.Response{
 					Status:  http.StatusCreated,
-					Message: codes.GetErr(codes.Success),
-					Data:    codes.GetErr(codes.AccActivationInProcess),
+					Message: "SUCCESS",
+					Data:    "Account activation in progress",
 				}
 				if !reflect.DeepEqual(resp, &temp) {
 					t.Errorf("Want: %v, Got: %v", temp, resp)
@@ -235,7 +235,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 			want: func(resp *respModel.Response) {
 				temp := respModel.Response{
 					Status:  http.StatusOK,
-					Message: codes.GetErr(codes.Success),
+					Message: "SUCCESS",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(resp, &temp) {
