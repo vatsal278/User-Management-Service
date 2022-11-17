@@ -149,7 +149,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 	if len(result) == 0 {
 		return &respModel.Response{
 			Status:  http.StatusUnauthorized,
-			Message: codes.GetErr(codes.InvaliCredentials),
+			Message: codes.GetErr(codes.InvalidCredentials),
 			Data:    nil,
 		}
 	}
@@ -198,7 +198,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 	}
 	return &respModel.Response{
 		Status:  http.StatusOK,
-		Message: codes.GetErr(codes.Success),
+		Message: "SUCCESS",
 		Data:    nil,
 	}
 }
@@ -210,7 +210,7 @@ func (l userMgmtSvcLogic) Activate(id any) *respModel.Response {
 		log.Error(err)
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
-			Message: "cant activate the account",
+			Message: codes.GetErr(codes.AccActivationErr),
 			Data:    nil,
 		}
 	}
@@ -222,13 +222,13 @@ func (l userMgmtSvcLogic) Activate(id any) *respModel.Response {
 }
 
 func (l userMgmtSvcLogic) UserData(id any) *respModel.Response {
-	var userDetails model.UserDetails
+
 	i, ok := id.(string)
 	if !ok {
 		log.Error("cant assert id")
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
-			Message: "cant assert id",
+			Message: codes.GetErr(codes.ErrAssertUserid),
 			Data:    nil,
 		}
 	}
@@ -237,16 +237,23 @@ func (l userMgmtSvcLogic) UserData(id any) *respModel.Response {
 		log.Error("cant fetch user from db")
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
-			Message: "cant fetch user from db",
+			Message: codes.GetErr(codes.ErrFetchingUser),
 			Data:    nil,
 		}
 	}
-	userDetails.Name = user[len(user)-1].Name
-
-	userDetails.Email = masker.Email(user[len(user)-1].Email)
-	userDetails.Company = user[len(user)-1].Company
-	userDetails.LastLogin = user[len(user)-1].UpdatedOn
-
+	if len(user) == 0 {
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: codes.GetErr(codes.AccNotFound),
+			Data:    nil,
+		}
+	}
+	userDetails := model.UserDetails{
+		Name:      user[len(user)-1].Name,
+		Email:     masker.Email(user[len(user)-1].Email),
+		Company:   user[len(user)-1].Company,
+		LastLogin: user[len(user)-1].UpdatedOn,
+	}
 	return &respModel.Response{
 		Status:  http.StatusOK,
 		Message: "SUCCESS",

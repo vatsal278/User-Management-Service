@@ -34,6 +34,18 @@ func (m *MockUserMgmtSvcHandler) EXPECT() *MockUserMgmtSvcHandlerMockRecorder {
 	return m.recorder
 }
 
+// Activation mocks base method.
+func (m *MockUserMgmtSvcHandler) Activation(arg0 http.ResponseWriter, arg1 *http.Request) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Activation", arg0, arg1)
+}
+
+// Activation indicates an expected call of Activation.
+func (mr *MockUserMgmtSvcHandlerMockRecorder) Activation(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Activation", reflect.TypeOf((*MockUserMgmtSvcHandler)(nil).Activation), arg0, arg1)
+}
+
 // HealthCheck mocks base method.
 func (m *MockUserMgmtSvcHandler) HealthCheck() (string, string, bool) {
 	m.ctrl.T.Helper()
@@ -72,4 +84,16 @@ func (m *MockUserMgmtSvcHandler) SignUp(arg0 http.ResponseWriter, arg1 *http.Req
 func (mr *MockUserMgmtSvcHandlerMockRecorder) SignUp(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SignUp", reflect.TypeOf((*MockUserMgmtSvcHandler)(nil).SignUp), arg0, arg1)
+}
+
+// UserDetails mocks base method.
+func (m *MockUserMgmtSvcHandler) UserDetails(arg0 http.ResponseWriter, arg1 *http.Request) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UserDetails", arg0, arg1)
+}
+
+// UserDetails indicates an expected call of UserDetails.
+func (mr *MockUserMgmtSvcHandlerMockRecorder) UserDetails(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserDetails", reflect.TypeOf((*MockUserMgmtSvcHandler)(nil).UserDetails), arg0, arg1)
 }

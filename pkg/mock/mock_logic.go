@@ -36,6 +36,20 @@ func (m *MockUserMgmtSvcLogicIer) EXPECT() *MockUserMgmtSvcLogicIerMockRecorder 
 	return m.recorder
 }
 
+// Activate mocks base method.
+func (m *MockUserMgmtSvcLogicIer) Activate(arg0 interface{}) *model.Response {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Activate", arg0)
+	ret0, _ := ret[0].(*model.Response)
+	return ret0
+}
+
+// Activate indicates an expected call of Activate.
+func (mr *MockUserMgmtSvcLogicIerMockRecorder) Activate(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Activate", reflect.TypeOf((*MockUserMgmtSvcLogicIer)(nil).Activate), arg0)
+}
+
 // HealthCheck mocks base method.
 func (m *MockUserMgmtSvcLogicIer) HealthCheck() bool {
 	m.ctrl.T.Helper()
@@ -76,4 +90,18 @@ func (m *MockUserMgmtSvcLogicIer) Signup(arg0 model0.SignUpCredentials) *model.R
 func (mr *MockUserMgmtSvcLogicIerMockRecorder) Signup(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Signup", reflect.TypeOf((*MockUserMgmtSvcLogicIer)(nil).Signup), arg0)
+}
+
+// UserData mocks base method.
+func (m *MockUserMgmtSvcLogicIer) UserData(arg0 interface{}) *model.Response {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UserData", arg0)
+	ret0, _ := ret[0].(*model.Response)
+	return ret0
+}
+
+// UserData indicates an expected call of UserData.
+func (mr *MockUserMgmtSvcLogicIerMockRecorder) UserData(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserData", reflect.TypeOf((*MockUserMgmtSvcLogicIer)(nil).UserData), arg0)
 }
