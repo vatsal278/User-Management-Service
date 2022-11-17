@@ -5,6 +5,7 @@ import (
 	"github.com/PereRohit/util/log"
 	respModel "github.com/PereRohit/util/model"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/ggwhite/go-masker"
 	"github.com/google/uuid"
 	"github.com/vatsal278/UserManagementService/internal/codes"
 	"github.com/vatsal278/UserManagementService/internal/config"
@@ -22,8 +23,8 @@ type UserMgmtSvcLogicIer interface {
 	HealthCheck() bool
 	Signup(model.SignUpCredentials) *respModel.Response
 	Login(http.ResponseWriter, model.LoginCredentials) *respModel.Response
-	//UserData(any) *respModel.Response
-	//Activate(id any) *respModel.Response
+	UserData(any) *respModel.Response
+	Activate(id any) *respModel.Response
 }
 
 type userMgmtSvcLogic struct {
@@ -69,7 +70,7 @@ func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.
 		Id:           uuid.New().String(),
 		Email:        credential.Email,
 		Name:         credential.Name,
-		Company:      "perennial",
+		Company:      "",
 		RegisteredOn: credential.RegistrationTimestamp,
 	}
 
@@ -93,19 +94,19 @@ func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.
 			Data:    nil,
 		}
 	}
-	go func() {
-		userID := fmt.Sprintf(`{"user_id":"%s"}`, newUser.Id)
-		err = l.msgQueue.MsgBroker.PushMsg(userID, l.msgQueue.PubId, l.msgQueue.Channel)
+	go func(userId string, pubId string, channel string) {
+		userID := fmt.Sprintf(`{"user_id":"%s"}`, userId)
+		err := l.msgQueue.MsgBroker.PushMsg(userID, pubId, channel)
 		if err != nil {
 			log.Error(err)
 			return
 		}
 		return
-	}()
+	}(newUser.Id, l.msgQueue.PubId, l.msgQueue.Channel)
 	return &respModel.Response{
 		Status:  http.StatusCreated,
-		Message: codes.GetErr(codes.Success),
-		Data:    codes.GetErr(codes.AccActivationInProcess),
+		Message: "SUCCESS",
+		Data:    "Account activation in progress",
 	}
 }
 
@@ -126,8 +127,10 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
+	log.Info(result[0].Id)
 	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(result[0].Id))
 	if err != nil {
+		log.Error(err)
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
 			Message: codes.GetErr(codes.ErrHashPassword),
@@ -174,7 +177,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 		}
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:     l.cookie.Name,
+		Name:     "token",
 		Value:    jwtToken,
 		MaxAge:   int(l.cookie.Expiry),
 		Path:     l.cookie.Path,
@@ -197,5 +200,56 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 		Status:  http.StatusOK,
 		Message: codes.GetErr(codes.Success),
 		Data:    nil,
+	}
+}
+
+func (l userMgmtSvcLogic) Activate(id any) *respModel.Response {
+
+	err := l.DsSvc.Update(map[string]interface{}{"active": true}, map[string]interface{}{"user_id": id})
+	if err != nil {
+		log.Error(err)
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: "cant activate the account",
+			Data:    nil,
+		}
+	}
+	return &respModel.Response{
+		Status:  http.StatusOK,
+		Message: "SUCCESS",
+		Data:    nil,
+	}
+}
+
+func (l userMgmtSvcLogic) UserData(id any) *respModel.Response {
+	var userDetails model.UserDetails
+	i, ok := id.(string)
+	if !ok {
+		log.Error("cant assert id")
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: "cant assert id",
+			Data:    nil,
+		}
+	}
+	user, err := l.DsSvc.Get(map[string]interface{}{"user_id": i})
+	if err != nil {
+		log.Error("cant fetch user from db")
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: "cant fetch user from db",
+			Data:    nil,
+		}
+	}
+	userDetails.Name = user[len(user)-1].Name
+
+	userDetails.Email = masker.Email(user[len(user)-1].Email)
+	userDetails.Company = user[len(user)-1].Company
+	userDetails.LastLogin = user[len(user)-1].UpdatedOn
+
+	return &respModel.Response{
+		Status:  http.StatusOK,
+		Message: "SUCCESS",
+		Data:    userDetails,
 	}
 }

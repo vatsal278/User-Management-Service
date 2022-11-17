@@ -22,14 +22,14 @@
       "127.0.0.1:80"
     ],
     "user_agent": "UserAgent",
-    "url_check_flag" : true,
+    "url_check_flag" : false,
     "new_account_channel": "new.account.channel",
     "account_activation_channel": "account.activation.channel"
   },
   "secret_key": "secret",
   "cookie": {
     "name": "token",
-    "expiry": "30s",
+    "expiry": "300s",
     "path": "/user"
   }
 }

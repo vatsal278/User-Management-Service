@@ -25,6 +25,13 @@ type User struct {
 	Salt          string    `json:"salt" sql:"salt"`
 }
 
+type UserDetails struct {
+	Name      string
+	Email     string
+	Company   string
+	LastLogin time.Time
+}
+
 const Schema = `
 		(
 		    user_id varchar(225) not null,

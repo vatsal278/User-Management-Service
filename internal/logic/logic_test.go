@@ -440,3 +440,79 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 		})
 	}
 }
+
+func Test_userManagementServiceLogic_Activation(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	tests := []struct {
+		name        string
+		credentials model.LoginCredentials
+		setup       func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct)
+		want        func(*respModel.Response)
+	}{
+		{
+			name: "Success :: Login",
+			credentials: model.LoginCredentials{
+				Email:    "vatsal@gmail.com",
+				Password: "Abcde@12345",
+			},
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct) {
+				mockDs := mock.NewMockDataSourceI(mockCtrl)
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				var users []model.User
+				users = append(users, model.User{Email: "vatsal@gmail.com", Id: "123", Active: true})
+				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(users, nil)
+				mockDs.EXPECT().Get(gomock.Any()).Times(1).Return(users, nil)
+				mockDs.EXPECT().Update(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				mockJwtSvc.EXPECT().GenerateToken(jwt.SigningMethodHS256, "123", gomock.Any()).Return("", nil)
+				return mockDs, mockJwtSvc, config.MsgQueue{MsgBroker: sdk.NewMsgBrokerSvc("http://localhost:9095")}, config.CookieStruct{Expiry: 360}
+			},
+			want: func(resp *respModel.Response) {
+				temp := respModel.Response{
+					Status:  http.StatusOK,
+					Message: codes.GetErr(codes.Success),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(resp, &temp) {
+					t.Errorf("Want: %v, Got: %v", temp, resp)
+				}
+			},
+		},
+		{
+			name: "Failure :: Login :: Unable to fetch user from db",
+			credentials: model.LoginCredentials{
+				Email:    "vatsal@gmail.com",
+				Password: "Abcde@12345",
+			},
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct) {
+				mockDs := mock.NewMockDataSourceI(mockCtrl)
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				var users []model.User
+				users = append(users, model.User{Email: "vatsal@gmail.com", Id: "123", Active: true})
+				mockDs.EXPECT().Get(map[string]interface{}{"email": "vatsal@gmail.com"}).Times(1).Return(nil, errors.New(""))
+
+				return mockDs, mockJwtSvc, config.MsgQueue{MsgBroker: sdk.NewMsgBrokerSvc("http://localhost:9095")}, config.CookieStruct{}
+			},
+			want: func(resp *respModel.Response) {
+				temp := respModel.Response{
+					Status:  http.StatusInternalServerError,
+					Message: codes.GetErr(codes.ErrFetchingUser),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(resp, &temp) {
+					t.Errorf("Want: %v, Got: %v", temp, resp)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := NewUserMgmtSvcLogic(tt.setup())
+
+			got := rec.Login(httptest.NewRecorder(), tt.credentials)
+
+			tt.want(got)
+		})
+	}
+}
