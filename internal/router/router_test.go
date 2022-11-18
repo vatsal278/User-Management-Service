@@ -5,11 +5,11 @@ import (
 	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/testutil"
 	"github.com/golang/mock/gomock"
+	"github.com/vatsal278/UserManagementService/internal/config"
+	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/vatsal278/UserManagementService/internal/config"
 )
 
 func TestRegister(t *testing.T) {
@@ -26,8 +26,15 @@ func TestRegister(t *testing.T) {
 			name: "Success health check",
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
-					ServiceRouteVersion: "v1",
-				}
+					JwtSvc: config.JWTSvc{JwtSvc: jwtSvc.JWTAuthService("")},
+					Cfg: &config.Config{
+						ServiceRouteVersion: "v2",
+						DataBase: config.DbCfg{
+							Driver: "mysql",
+						},
+					},
+					ServiceRouteVersion: "v2",
+					DbSvc:               config.DbSvc{}}
 			},
 			validate: func(w http.ResponseWriter) {
 				wIn := w.(*httptest.ResponseRecorder)
