@@ -127,7 +127,6 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-	log.Info(result[0].Id)
 	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(result[0].Id))
 	if err != nil {
 		log.Error(err)
@@ -204,7 +203,6 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 }
 
 func (l userMgmtSvcLogic) Activate(id any) *respModel.Response {
-
 	err := l.DsSvc.Update(map[string]interface{}{"active": true}, map[string]interface{}{"user_id": id})
 	if err != nil {
 		log.Error(err)
@@ -222,7 +220,6 @@ func (l userMgmtSvcLogic) Activate(id any) *respModel.Response {
 }
 
 func (l userMgmtSvcLogic) UserData(id any) *respModel.Response {
-
 	i, ok := id.(string)
 	if !ok {
 		log.Error("cant assert id")
@@ -234,7 +231,7 @@ func (l userMgmtSvcLogic) UserData(id any) *respModel.Response {
 	}
 	user, err := l.DsSvc.Get(map[string]interface{}{"user_id": i})
 	if err != nil {
-		log.Error("cant fetch user from db")
+		log.Error(err)
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
 			Message: codes.GetErr(codes.ErrFetchingUser),
