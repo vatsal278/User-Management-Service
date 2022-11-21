@@ -2,6 +2,8 @@ package router
 
 import (
 	"encoding/json"
+	"fmt"
+	config2 "github.com/PereRohit/util/config"
 	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/testutil"
 	"github.com/golang/mock/gomock"
@@ -13,6 +15,9 @@ import (
 )
 
 func TestRegister(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping testing due to unavailability of testing environment")
+	}
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -28,12 +33,12 @@ func TestRegister(t *testing.T) {
 				return &config.SvcConfig{
 					JwtSvc: config.JWTSvc{JwtSvc: jwtSvc.JWTAuthService("")},
 					Cfg: &config.Config{
-						ServiceRouteVersion: "v2",
+						ServiceRouteVersion: "v1",
 						DataBase: config.DbCfg{
 							Driver: "mysql",
 						},
 					},
-					ServiceRouteVersion: "v2",
+					ServiceRouteVersion: "v1",
 					DbSvc:               config.DbSvc{}}
 			},
 			validate: func(w http.ResponseWriter) {
@@ -51,6 +56,7 @@ func TestRegister(t *testing.T) {
 
 				resp := respModel.Response{}
 				err := json.NewDecoder(wIn.Body).Decode(&resp)
+				t.Log(resp)
 				diff = testutil.Diff(err, nil)
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
@@ -65,19 +71,19 @@ func TestRegister(t *testing.T) {
 					Status  string `json:"status"`
 					Message string `json:"message,omitempty"`
 				}
-				hCdata := map[string]svcHealthStat{}
+				hCdata := map[string]interface{}{}
+				hCdata["userManagementService"] = svcHealthStat{Status: fmt.Sprint(http.StatusOK)}
 
 				err = json.Unmarshal(respDataB, &hCdata)
 				diff = testutil.Diff(err, nil)
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
 				}
-				resp.Data = hCdata
 
 				diff = testutil.Diff(resp, respModel.Response{
 					Status:  http.StatusOK,
 					Message: http.StatusText(http.StatusOK),
-					Data:    map[string]svcHealthStat{},
+					Data:    hCdata,
 				})
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)
@@ -89,8 +95,15 @@ func TestRegister(t *testing.T) {
 			name: "No route found",
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
+					JwtSvc: config.JWTSvc{JwtSvc: jwtSvc.JWTAuthService("")},
+					Cfg: &config.Config{
+						ServiceRouteVersion: "v1",
+						DataBase: config.DbCfg{
+							Driver: "mysql",
+						},
+					},
 					ServiceRouteVersion: "v1",
-				}
+					DbSvc:               config.DbSvc{}}
 			},
 			validate: func(w http.ResponseWriter) {
 				wIn := w.(*httptest.ResponseRecorder)
@@ -127,8 +140,15 @@ func TestRegister(t *testing.T) {
 			name: "Method not allowed",
 			setup: func() *config.SvcConfig {
 				return &config.SvcConfig{
+					JwtSvc: config.JWTSvc{JwtSvc: jwtSvc.JWTAuthService("")},
+					Cfg: &config.Config{
+						ServiceRouteVersion: "v1",
+						DataBase: config.DbCfg{
+							Driver: "mysql",
+						},
+					},
 					ServiceRouteVersion: "v1",
-				}
+					DbSvc:               config.DbSvc{}}
 			},
 			validate: func(w http.ResponseWriter) {
 				wIn := w.(*httptest.ResponseRecorder)
@@ -159,15 +179,22 @@ func TestRegister(t *testing.T) {
 					t.Error(testutil.Callers(), diff)
 				}
 			},
-			give: httptest.NewRequest(http.MethodPost, "/v1/health", nil),
+			give: httptest.NewRequest(http.MethodPut, "/v1/health", nil),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Register(tt.setup())
+			cfg := config.Config{}
+			err := config2.LoadFromJson("./../../configs/config.json", &cfg)
+			if err != nil {
+				t.Fail()
+			}
+			db := config.Connect(cfg.DataBase, "usermgmt")
+			c := tt.setup()
+			c.DbSvc.Db = db
+			r := Register(c)
 
 			w := httptest.NewRecorder()
-
 			r.ServeHTTP(w, tt.give)
 
 			tt.validate(w)

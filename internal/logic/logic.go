@@ -73,7 +73,7 @@ func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.
 		Company:      "",
 		RegisteredOn: credential.RegistrationTimestamp,
 	}
-
+	log.Info(newUser.Id)
 	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(newUser.Id))
 	if err != nil {
 		log.Error(err.Error())
@@ -127,7 +127,6 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-	log.Info(result[0].Id)
 	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(result[0].Id))
 	if err != nil {
 		log.Error(err)
