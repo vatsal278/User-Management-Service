@@ -11,6 +11,7 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/model"
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
+	"github.com/vatsal278/UserManagementService/pkg/session"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -24,8 +25,8 @@ type UserMgmtSvcHandler interface {
 	HealthChecker
 	SignUp(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
-	//UserDetails(w http.ResponseWriter, r *http.Request)
-	//Activation(w http.ResponseWriter, r *http.Request)
+	UserDetails(w http.ResponseWriter, r *http.Request)
+	Activation(w http.ResponseWriter, r *http.Request)
 }
 
 type userMgmtSvc struct {
@@ -106,4 +107,27 @@ func (svc userMgmtSvc) Login(w http.ResponseWriter, r *http.Request) {
 	resp := svc.logic.Login(w, credential)
 	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 
+}
+func (svc userMgmtSvc) Activation(w http.ResponseWriter, r *http.Request) {
+	var data map[string]string
+	bytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Error(err)
+		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrReadingReqBody), nil)
+		return
+	}
+	err = json.Unmarshal(bytes, &data)
+	if err != nil {
+		log.Error(err)
+		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrUnmarshall), nil)
+		return
+	}
+	resp := svc.logic.Activate(data["user_id"])
+	response.ToJson(w, resp.Status, resp.Message, resp.Data)
+}
+
+func (svc userMgmtSvc) UserDetails(w http.ResponseWriter, r *http.Request) {
+	id := session.GetSession(r.Context())
+	resp := svc.logic.UserData(id)
+	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 }

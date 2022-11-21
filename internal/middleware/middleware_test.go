@@ -28,6 +28,7 @@ func test(w http.ResponseWriter, r *http.Request) {
 	c := r.Context()
 	id := session.GetSession(c)
 	response.ToJson(w, http.StatusOK, "passed", id)
+
 }
 
 func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
@@ -347,7 +348,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				},
 			})
 			hit = false
-			x := middleware.ExtractUser(test)
+			x := middleware.ExtractUser(http.HandlerFunc(test))
 			x.ServeHTTP(res, req)
 
 			tt.validator(res)
@@ -527,7 +528,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 				},
 			})
 			hit = false
-			x := middleware.ScreenRequest(test)
+			x := middleware.ScreenRequest(http.HandlerFunc(test))
 			x.ServeHTTP(res, req)
 
 			tt.validator(res)

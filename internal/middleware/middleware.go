@@ -24,7 +24,7 @@ func NewUserMgmtMiddleware(cfg *svcCfg.SvcConfig) *UserMgmtMiddleware {
 	}
 }
 
-func (u UserMgmtMiddleware) ExtractUser(next http.HandlerFunc) http.Handler {
+func (u UserMgmtMiddleware) ExtractUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		cookie, err := r.Cookie("token")
@@ -34,11 +34,13 @@ func (u UserMgmtMiddleware) ExtractUser(next http.HandlerFunc) http.Handler {
 			return
 		}
 		if cookie.Value == "" {
+			log.Error(err)
 			response.ToJson(w, http.StatusUnauthorized, codes.GetErr(codes.ErrUnauthorized), nil)
 			return
 		}
 		token, err := u.jwt.ValidateToken(cookie.Value)
 		if err != nil {
+			log.Error(err)
 			if strings.Contains(err.Error(), "Token is expired") {
 				response.ToJson(w, http.StatusUnauthorized, codes.GetErr(codes.ErrTokenExpired), nil)
 				return
@@ -65,7 +67,7 @@ func (u UserMgmtMiddleware) ExtractUser(next http.HandlerFunc) http.Handler {
 	})
 }
 
-func (u UserMgmtMiddleware) ScreenRequest(next http.HandlerFunc) http.Handler {
+func (u UserMgmtMiddleware) ScreenRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var urlMatch bool
 		if r.UserAgent() != u.cfg.MessageQueue.UserAgent {

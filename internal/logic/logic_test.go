@@ -5,6 +5,7 @@ import (
 	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/testutil"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/ggwhite/go-masker"
 	"github.com/golang/mock/gomock"
 	"github.com/vatsal278/UserManagementService/internal/codes"
 	"github.com/vatsal278/UserManagementService/internal/config"
@@ -84,8 +85,8 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 			want: func(resp *respModel.Response) {
 				temp := respModel.Response{
 					Status:  http.StatusCreated,
-					Message: codes.GetErr(codes.Success),
-					Data:    codes.GetErr(codes.AccActivationInProcess),
+					Message: "SUCCESS",
+					Data:    "Account activation in progress",
 				}
 				if !reflect.DeepEqual(resp, &temp) {
 					t.Errorf("Want: %v, Got: %v", temp, resp)
@@ -109,8 +110,8 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 			want: func(resp *respModel.Response) {
 				temp := respModel.Response{
 					Status:  http.StatusCreated,
-					Message: codes.GetErr(codes.Success),
-					Data:    codes.GetErr(codes.AccActivationInProcess),
+					Message: "SUCCESS",
+					Data:    "Account activation in progress",
 				}
 				if !reflect.DeepEqual(resp, &temp) {
 					t.Errorf("Want: %v, Got: %v", temp, resp)
@@ -234,7 +235,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 			want: func(resp *respModel.Response) {
 				temp := respModel.Response{
 					Status:  http.StatusOK,
-					Message: codes.GetErr(codes.Success),
+					Message: "SUCCESS",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(resp, &temp) {
@@ -338,7 +339,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 			want: func(resp *respModel.Response) {
 				temp := respModel.Response{
 					Status:  http.StatusUnauthorized,
-					Message: codes.GetErr(codes.InvaliCredentials),
+					Message: codes.GetErr(codes.InvalidCredentials),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(resp, &temp) {
@@ -435,6 +436,169 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 			rec := NewUserMgmtSvcLogic(tt.setup())
 
 			got := rec.Login(httptest.NewRecorder(), tt.credentials)
+
+			tt.want(got)
+		})
+	}
+}
+
+func Test_userManagementServiceLogic_Activation(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	tests := []struct {
+		name        string
+		credentials model.LoginCredentials
+		setup       func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct)
+		want        func(*respModel.Response)
+	}{
+		{
+			name: "Success :: Activation",
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct) {
+				mockDs := mock.NewMockDataSourceI(mockCtrl)
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				mockDs.EXPECT().Update(map[string]interface{}{"active": true}, map[string]interface{}{"user_id": "123"}).Times(1).Return(nil)
+				return mockDs, mockJwtSvc, config.MsgQueue{}, config.CookieStruct{}
+			},
+			want: func(resp *respModel.Response) {
+				temp := respModel.Response{
+					Status:  http.StatusOK,
+					Message: "SUCCESS",
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(resp, &temp) {
+					t.Errorf("Want: %v, Got: %v", temp, resp)
+				}
+			},
+		},
+		{
+			name: "Failure :: Activation",
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct) {
+				mockDs := mock.NewMockDataSourceI(mockCtrl)
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				mockDs.EXPECT().Update(gomock.Any(), gomock.Any()).Times(1).Return(errors.New(""))
+				return mockDs, mockJwtSvc, config.MsgQueue{}, config.CookieStruct{}
+			},
+			want: func(resp *respModel.Response) {
+				temp := respModel.Response{
+					Status:  http.StatusInternalServerError,
+					Message: codes.GetErr(codes.AccActivationErr),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(resp, &temp) {
+					t.Errorf("Want: %v, Got: %v", temp, resp)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := NewUserMgmtSvcLogic(tt.setup())
+
+			got := rec.Activate("123")
+
+			tt.want(got)
+		})
+	}
+}
+func Test_userManagementServiceLogic_UserDetails(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	tests := []struct {
+		name        string
+		credentials interface{}
+		setup       func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct)
+		want        func(*respModel.Response)
+	}{
+		{
+			name:        "Success :: UserDetails",
+			credentials: "123",
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct) {
+				mockDs := mock.NewMockDataSourceI(mockCtrl)
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				var users []model.User
+				users = append(users, model.User{Email: "vatsal@gmail.com", Name: "Vatsal", Company: "perennial"})
+				mockDs.EXPECT().Get(map[string]interface{}{"user_id": "123"}).Times(1).Return(users, nil)
+				return mockDs, mockJwtSvc, config.MsgQueue{}, config.CookieStruct{}
+			},
+			want: func(resp *respModel.Response) {
+				var users = model.UserDetails{Email: masker.Email("vatsal@gmail.com"), Name: "Vatsal", Company: "perennial"}
+				temp := respModel.Response{
+					Status:  http.StatusOK,
+					Message: "SUCCESS",
+					Data:    users,
+				}
+				if !reflect.DeepEqual(resp, &temp) {
+					t.Errorf("Want: %v, Got: %v", &temp, resp)
+				}
+			},
+		},
+		{
+			name:        "Failure :: UserDetails",
+			credentials: true,
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct) {
+				mockDs := mock.NewMockDataSourceI(mockCtrl)
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				return mockDs, mockJwtSvc, config.MsgQueue{}, config.CookieStruct{}
+			},
+			want: func(resp *respModel.Response) {
+				temp := respModel.Response{
+					Status:  http.StatusInternalServerError,
+					Message: codes.GetErr(codes.ErrAssertUserid),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(resp, &temp) {
+					t.Errorf("Want: %v, Got: %v", &temp, resp)
+				}
+			},
+		},
+		{
+			name:        "Failure :: UserDetails :: db err",
+			credentials: "123",
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct) {
+				mockDs := mock.NewMockDataSourceI(mockCtrl)
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				mockDs.EXPECT().Get(map[string]interface{}{"user_id": "123"}).Times(1).Return(nil, errors.New(""))
+				return mockDs, mockJwtSvc, config.MsgQueue{}, config.CookieStruct{}
+			},
+			want: func(resp *respModel.Response) {
+				temp := respModel.Response{
+					Status:  http.StatusInternalServerError,
+					Message: codes.GetErr(codes.ErrFetchingUser),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(resp, &temp) {
+					t.Errorf("Want: %v, Got: %v", &temp, resp)
+				}
+			},
+		},
+		{
+			name:        "Failure :: UserDetails :: db err",
+			credentials: "123",
+			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct) {
+				mockDs := mock.NewMockDataSourceI(mockCtrl)
+				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
+				mockDs.EXPECT().Get(map[string]interface{}{"user_id": "123"}).Times(1).Return(nil, nil)
+				return mockDs, mockJwtSvc, config.MsgQueue{}, config.CookieStruct{}
+			},
+			want: func(resp *respModel.Response) {
+				temp := respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.AccNotFound),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(resp, &temp) {
+					t.Errorf("Want: %v, Got: %v", &temp, resp)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := NewUserMgmtSvcLogic(tt.setup())
+
+			got := rec.UserData(tt.credentials)
 
 			tt.want(got)
 		})
