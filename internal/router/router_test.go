@@ -3,7 +3,7 @@ package router
 import (
 	"encoding/json"
 	"fmt"
-	config2 "github.com/PereRohit/util/config"
+	"github.com/DATA-DOG/go-sqlmock"
 	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/testutil"
 	"github.com/golang/mock/gomock"
@@ -15,9 +15,6 @@ import (
 )
 
 func TestRegister(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping testing due to unavailability of testing environment")
-	}
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -39,7 +36,7 @@ func TestRegister(t *testing.T) {
 						},
 					},
 					ServiceRouteVersion: "v1",
-					DbSvc:               config.DbSvc{}}
+				}
 			},
 			validate: func(w http.ResponseWriter) {
 				wIn := w.(*httptest.ResponseRecorder)
@@ -183,19 +180,17 @@ func TestRegister(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := config.Config{}
-			err := config2.LoadFromJson("./../../configs/config.json", &cfg)
+			db, _, err := sqlmock.New()
 			if err != nil {
-				t.Fail()
+				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 			}
-			db := config.Connect(cfg.DataBase, "usermgmt")
+			defer db.Close()
+			sqlmock.MonitorPingsOption(true)
 			c := tt.setup()
 			c.DbSvc.Db = db
 			r := Register(c)
-
 			w := httptest.NewRecorder()
 			r.ServeHTTP(w, tt.give)
-
 			tt.validate(w)
 		})
 	}
