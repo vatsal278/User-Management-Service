@@ -30,6 +30,7 @@ func (u UserMgmtMiddleware) ExtractUser(next http.Handler) http.Handler {
 		cookie, err := r.Cookie("token")
 		if err != nil {
 			log.Error(err)
+			//user need t login err msg
 			response.ToJson(w, http.StatusUnauthorized, codes.GetErr(codes.ErrUnauthorized), nil)
 			return
 		}

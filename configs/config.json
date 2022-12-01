@@ -30,6 +30,6 @@
   "cookie": {
     "name": "token",
     "expiry": "300s",
-    "path": "/user"
+    "path": "/v1/user"
   }
 }

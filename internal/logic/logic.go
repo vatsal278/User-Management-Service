@@ -5,7 +5,6 @@ import (
 	"github.com/PereRohit/util/log"
 	respModel "github.com/PereRohit/util/model"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/ggwhite/go-masker"
 	"github.com/google/uuid"
 	"github.com/vatsal278/UserManagementService/internal/codes"
 	"github.com/vatsal278/UserManagementService/internal/config"
@@ -14,6 +13,7 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/repo/crypto"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"net/http"
+	"regexp"
 	"time"
 )
 
@@ -73,7 +73,7 @@ func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.
 		Company:      "",
 		RegisteredOn: credential.RegistrationTimestamp,
 	}
-
+	log.Info(newUser.Id)
 	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(newUser.Id))
 	if err != nil {
 		log.Error(err.Error())
@@ -178,13 +178,12 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    jwtToken,
-		MaxAge:   int(l.cookie.Expiry),
+		MaxAge:   int(l.cookie.Expiry.Seconds()),
 		Path:     l.cookie.Path,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(l.cookie.Expiry),
+		Expires:  time.Now().UTC().Add(l.cookie.Expiry),
 	})
-
 	newActiveDvc := result[0].ActiveDevices + 1
 	err = l.DsSvc.Update(map[string]interface{}{"active_devices": newActiveDvc}, map[string]interface{}{"email": credential.Email})
 	if err != nil {
@@ -245,9 +244,11 @@ func (l userMgmtSvcLogic) UserData(id any) *respModel.Response {
 			Data:    nil,
 		}
 	}
+	re := regexp.MustCompile(`(?:(?:^|(?<=@))([^.@])|\G(?!\A))[^.@](?:([^.@])(?=[.@]))?`)
+	maskedRe := re.ReplaceAll([]byte(user[len(user)-1].Email), []byte("*"))
 	userDetails := model.UserDetails{
 		Name:      user[len(user)-1].Name,
-		Email:     masker.Email(user[len(user)-1].Email),
+		Email:     string(maskedRe),
 		Company:   user[len(user)-1].Company,
 		LastLogin: user[len(user)-1].UpdatedOn,
 	}
