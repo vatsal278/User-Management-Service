@@ -28,6 +28,7 @@ func test(w http.ResponseWriter, r *http.Request) {
 	c := r.Context()
 	id := session.GetSession(c)
 	response.ToJson(w, http.StatusOK, "passed", id)
+
 }
 
 func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {

@@ -15,6 +15,9 @@ import (
 )
 
 func TestRegister(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping testing due to unavailability of testing environment")
+	}
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -36,7 +39,7 @@ func TestRegister(t *testing.T) {
 						},
 					},
 					ServiceRouteVersion: "v1",
-				}
+					DbSvc:               config.DbSvc{}}
 			},
 			validate: func(w http.ResponseWriter) {
 				wIn := w.(*httptest.ResponseRecorder)
@@ -53,6 +56,7 @@ func TestRegister(t *testing.T) {
 
 				resp := respModel.Response{}
 				err := json.NewDecoder(wIn.Body).Decode(&resp)
+				t.Log(resp)
 				diff = testutil.Diff(err, nil)
 				if diff != "" {
 					t.Error(testutil.Callers(), diff)

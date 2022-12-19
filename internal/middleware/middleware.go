@@ -42,11 +42,13 @@ func (u UserMgmtMiddleware) ExtractUser(next http.Handler) http.Handler {
 			return
 		}
 		if cookie.Value == "" {
+			log.Error(err)
 			response.ToJson(w, http.StatusUnauthorized, codes.GetErr(codes.ErrUnauthorized), nil)
 			return
 		}
 		token, err := u.jwt.ValidateToken(cookie.Value)
 		if err != nil {
+			log.Error(err)
 			if strings.Contains(err.Error(), "Token is expired") {
 				response.ToJson(w, http.StatusUnauthorized, codes.GetErr(codes.ErrTokenExpired), nil)
 				return

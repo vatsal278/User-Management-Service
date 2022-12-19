@@ -183,7 +183,6 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
-
 	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(result[0].Id))
 	if err != nil {
 		log.Error(err)
