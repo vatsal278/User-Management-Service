@@ -14,6 +14,7 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -74,6 +75,61 @@ func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.
 		RegisteredOn: credential.RegistrationTimestamp,
 	}
 	log.Info(newUser.Id)
+	if len(credential.Password) < 8 {
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: "Password must be 8 characters long",
+			Data:    nil,
+		}
+	}
+	done, err := regexp.MatchString("([a-z])+", credential.Password)
+	if err != nil {
+		log.Error(err)
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to match password",
+			Data:    nil,
+		}
+	}
+	if !done {
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: "Password must contain 1 lower case character",
+			Data:    nil,
+		}
+	}
+	done, err = regexp.MatchString("([A-Z])+", credential.Password)
+	if err != nil {
+		log.Error(err)
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to match password",
+			Data:    nil,
+		}
+	}
+	if !done {
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: "Password must contain 1 upper case character",
+			Data:    nil,
+		}
+	}
+	done, err = regexp.MatchString("([0-9])+", credential.Password)
+	if err != nil {
+		log.Error(err)
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to match password",
+			Data:    nil,
+		}
+	}
+	if !done {
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: "Password must contain 1 special character",
+			Data:    nil,
+		}
+	}
 	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(newUser.Id))
 	if err != nil {
 		log.Error(err.Error())
@@ -127,6 +183,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 			Data:    nil,
 		}
 	}
+
 	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(result[0].Id))
 	if err != nil {
 		log.Error(err)
@@ -244,11 +301,20 @@ func (l userMgmtSvcLogic) UserData(id any) *respModel.Response {
 			Data:    nil,
 		}
 	}
-	re := regexp.MustCompile(`(?:(?:^|(?<=@))([^.@])|\G(?!\A))[^.@](?:([^.@])(?=[.@]))?`)
-	maskedRe := re.ReplaceAll([]byte(user[len(user)-1].Email), []byte("*"))
+
+	eSlice := strings.Split(user[len(user)-1].Email, "@")
+	a := strings.Split(eSlice[0], "")
+	for i := 2; i < len(a)-2; i++ {
+		a[i] = "x"
+	}
+	e := strings.Join(a, "")
+	eDomain := strings.Split(eSlice[1], ".")
+	eDomain[0] = "xxx"
+	maskedEmail := e + "@" + eDomain[0] + "." + eDomain[1]
+
 	userDetails := model.UserDetails{
 		Name:      user[len(user)-1].Name,
-		Email:     string(maskedRe),
+		Email:     maskedEmail,
 		Company:   user[len(user)-1].Company,
 		LastLogin: user[len(user)-1].UpdatedOn,
 	}

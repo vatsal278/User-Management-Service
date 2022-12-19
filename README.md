@@ -147,7 +147,7 @@ Response Body(json):
   "message": "SUCCESS",
   "data": {
     "name": "<full name>",
-     // if email was abcde123@gmail.com
+     // if email was abcde123@gmail.com       (?<=.{2})[^@\n](?=[^@\n]{2,}?@)
     "email": "<masked email -> abxxxxx23@xxx.com>",
     "company": "<company name>",
     "last_login": "<timestamp>"

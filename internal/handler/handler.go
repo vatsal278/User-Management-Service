@@ -3,8 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"github.com/PereRohit/util/log"
+	"github.com/PereRohit/util/request"
 	"github.com/PereRohit/util/response"
-	"github.com/PereRohit/util/validator"
 	"github.com/vatsal278/UserManagementService/internal/codes"
 	"github.com/vatsal278/UserManagementService/internal/config"
 	"github.com/vatsal278/UserManagementService/internal/logic"
@@ -55,24 +55,11 @@ func (svc userMgmtSvc) HealthCheck() (svcName string, msg string, stat bool) {
 	return
 }
 func (svc userMgmtSvc) SignUp(w http.ResponseWriter, r *http.Request) {
-
 	var credential model.SignUpCredentials
-	body, err := ioutil.ReadAll(r.Body)
+	status, err := request.FromJson(r, &credential)
 	if err != nil {
 		log.Error(err)
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrReadingReqBody), nil)
-		return
-	}
-	err = json.Unmarshal(body, &credential)
-	if err != nil {
-		log.Error(err)
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrUnmarshall), nil)
-		return
-	}
-	err = validator.Validate(&credential)
-	if err != nil {
-		log.Error(err)
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrValidate), nil)
+		response.ToJson(w, status, err.Error(), nil)
 		return
 	}
 	credential.RegistrationTimestamp, err = time.Parse("02-01-2006 15:04:05", credential.RegistrationDate)
@@ -86,27 +73,14 @@ func (svc userMgmtSvc) SignUp(w http.ResponseWriter, r *http.Request) {
 }
 func (svc userMgmtSvc) Login(w http.ResponseWriter, r *http.Request) {
 	var credential model.LoginCredentials
-	bytes, err := ioutil.ReadAll(r.Body)
+	status, err := request.FromJson(r, &credential)
 	if err != nil {
 		log.Error(err)
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrReadingReqBody), nil)
-		return
-	}
-	err = json.Unmarshal(bytes, &credential)
-	if err != nil {
-		log.Error(err)
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrUnmarshall), nil)
-		return
-	}
-	err = validator.Validate(credential)
-	if err != nil {
-		log.Error(err)
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrValidate), nil)
+		response.ToJson(w, status, err.Error(), nil)
 		return
 	}
 	resp := svc.logic.Login(w, credential)
 	response.ToJson(w, resp.Status, resp.Message, resp.Data)
-
 }
 func (svc userMgmtSvc) Activation(w http.ResponseWriter, r *http.Request) {
 	var data map[string]string

@@ -1,12 +1,14 @@
 package config
 
 import (
+	"crypto/rsa"
 	"database/sql"
 	"fmt"
 	"github.com/PereRohit/util/config"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/vatsal278/UserManagementService/internal/model"
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
+	"github.com/vatsal278/msgbroker/pkg/crypt"
 	"github.com/vatsal278/msgbroker/pkg/sdk"
 	"time"
 
@@ -36,6 +38,7 @@ type MsgQueueCfg struct {
 	UrlCheck                bool     `json:"url_check_flag"`
 	NewAccountChannel       string   `json:"new_account_channel"`
 	ActivatedAccountChannel string   `json:"account_activation_channel"`
+	Key                     string   `json:"private_key"`
 }
 type SvcConfig struct {
 	Cfg                 *Config
@@ -48,9 +51,10 @@ type SvcConfig struct {
 }
 
 type MsgQueue struct {
-	MsgBroker sdk.MsgBrokerSvcI
-	PubId     string
-	Channel   string
+	MsgBroker  sdk.MsgBrokerSvcI
+	PubId      string
+	Channel    string
+	PrivateKey rsa.PrivateKey
 }
 type DbSvc struct {
 	Db *sql.DB
@@ -101,11 +105,20 @@ func Connect(cfg DbCfg, tableName string) *sql.DB {
 }
 
 func InitSvcConfig(cfg Config) *SvcConfig {
-	// init required services and assign to the service struct fields
 	dataBase := Connect(cfg.DataBase, cfg.DataBase.TableName)
 	jwtSvc := jwtSvc.JWTAuthService(cfg.SecretKey)
 	msgBrokerSvc := sdk.NewMsgBrokerSvc(cfg.MessageQueue.SvcUrl)
 	id, err := msgBrokerSvc.RegisterPub(cfg.MessageQueue.NewAccountChannel)
+	if err != nil {
+		panic(err.Error())
+	}
+	privateKey, err := crypt.PEMStrAsPrivKey(cfg.MessageQueue.Key)
+	if err != nil {
+		panic(err.Error())
+	}
+	publicKey := privateKey.PublicKey
+	pubKey := crypt.PubKeyAsPEMStr(&publicKey)
+	err = msgBrokerSvc.RegisterSub("PUT", "http://localhost/v1/activate", pubKey, cfg.MessageQueue.ActivatedAccountChannel)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -119,6 +132,6 @@ func InitSvcConfig(cfg Config) *SvcConfig {
 		SvrCfg:              cfg.ServerConfig,
 		DbSvc:               DbSvc{Db: dataBase},
 		JwtSvc:              JWTSvc{JwtSvc: jwtSvc},
-		MsgBrokerSvc:        MsgQueue{MsgBroker: msgBrokerSvc, PubId: id, Channel: cfg.MessageQueue.NewAccountChannel},
+		MsgBrokerSvc:        MsgQueue{MsgBroker: msgBrokerSvc, PubId: id, Channel: cfg.MessageQueue.NewAccountChannel, PrivateKey: *privateKey},
 	}
 }
