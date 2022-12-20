@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"encoding/json"
 	"github.com/PereRohit/util/log"
+	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/request"
 	"github.com/PereRohit/util/response"
 	"github.com/vatsal278/UserManagementService/internal/codes"
@@ -12,8 +12,8 @@ import (
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"github.com/vatsal278/UserManagementService/pkg/session"
-	"io/ioutil"
 	"net/http"
+	"regexp"
 	"time"
 )
 
@@ -33,6 +33,81 @@ type userMgmtSvc struct {
 	logic logic.UserMgmtSvcLogicIer
 }
 
+func validatePass(pass string) *respModel.Response {
+	if len(pass) < 8 {
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: "Password must be 8 characters long",
+			Data:    nil,
+		}
+
+	}
+	done, err := regexp.MatchString("([a-z])+", pass)
+	if err != nil {
+		log.Error(err)
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to match password",
+			Data:    nil,
+		}
+	}
+	if !done {
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: "Password must contain 1 lower case character",
+			Data:    nil,
+		}
+	}
+	done, err = regexp.MatchString("([A-Z])+", pass)
+	if err != nil {
+		log.Error(err)
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to match password",
+			Data:    nil,
+		}
+	}
+	if !done {
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: "Password must contain 1 upper case character",
+			Data:    nil,
+		}
+	}
+	done, err = regexp.MatchString("([0-9])+", pass)
+	if err != nil {
+		log.Error(err)
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to match password",
+			Data:    nil,
+		}
+	}
+	if !done {
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: "Password must contain 1 numeric character",
+			Data:    nil,
+		}
+	}
+	done, err = regexp.MatchString("([@_])+", pass)
+	if err != nil {
+		log.Error(err)
+		return &respModel.Response{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to match password",
+			Data:    nil,
+		}
+	}
+	if !done {
+		return &respModel.Response{
+			Status:  http.StatusBadRequest,
+			Message: "Password must contain 1 numeric character",
+			Data:    nil,
+		}
+	}
+	return &respModel.Response{Status: http.StatusOK}
+}
 func NewUserMgmtSvc(ds datasource.DataSourceI, jwtService jwtSvc.JWTService, msgQueue config.MsgQueue, cookie config.CookieStruct) UserMgmtSvcHandler {
 	svc := &userMgmtSvc{
 		logic: logic.NewUserMgmtSvcLogic(ds, jwtService, msgQueue, cookie),
@@ -62,13 +137,18 @@ func (svc userMgmtSvc) SignUp(w http.ResponseWriter, r *http.Request) {
 		response.ToJson(w, status, err.Error(), nil)
 		return
 	}
+	resp := validatePass(credential.Password)
+	if resp.Status != http.StatusOK {
+		response.ToJson(w, resp.Status, resp.Message, resp.Data)
+		return
+	}
 	credential.RegistrationTimestamp, err = time.Parse("02-01-2006 15:04:05", credential.RegistrationDate)
 	if err != nil {
 		log.Error(err)
 		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrParseRegDate), nil)
 		return
 	}
-	resp := svc.logic.Signup(credential)
+	resp = svc.logic.Signup(credential)
 	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 }
 func (svc userMgmtSvc) Login(w http.ResponseWriter, r *http.Request) {
@@ -79,24 +159,23 @@ func (svc userMgmtSvc) Login(w http.ResponseWriter, r *http.Request) {
 		response.ToJson(w, status, err.Error(), nil)
 		return
 	}
-	resp := svc.logic.Login(w, credential)
+	resp := validatePass(credential.Password)
+	if resp.Status != http.StatusOK {
+		response.ToJson(w, resp.Status, resp.Message, resp.Data)
+		return
+	}
+	resp = svc.logic.Login(w, credential)
 	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 }
 func (svc userMgmtSvc) Activation(w http.ResponseWriter, r *http.Request) {
-	var data map[string]string
-	bytes, err := ioutil.ReadAll(r.Body)
+	var data model.Activate
+	status, err := request.FromJson(r, &data)
 	if err != nil {
 		log.Error(err)
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrReadingReqBody), nil)
+		response.ToJson(w, status, err.Error(), nil)
 		return
 	}
-	err = json.Unmarshal(bytes, &data)
-	if err != nil {
-		log.Error(err)
-		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrUnmarshall), nil)
-		return
-	}
-	resp := svc.logic.Activate(data["user_id"])
+	resp := svc.logic.Activate(data.UserId)
 	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 }
 

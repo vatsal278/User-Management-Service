@@ -13,7 +13,6 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/repo/crypto"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -75,61 +74,6 @@ func (l userMgmtSvcLogic) Signup(credential model.SignUpCredentials) *respModel.
 		RegisteredOn: credential.RegistrationTimestamp,
 	}
 	log.Info(newUser.Id)
-	if len(credential.Password) < 8 {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Password must be 8 characters long",
-			Data:    nil,
-		}
-	}
-	done, err := regexp.MatchString("([a-z])+", credential.Password)
-	if err != nil {
-		log.Error(err)
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to match password",
-			Data:    nil,
-		}
-	}
-	if !done {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Password must contain 1 lower case character",
-			Data:    nil,
-		}
-	}
-	done, err = regexp.MatchString("([A-Z])+", credential.Password)
-	if err != nil {
-		log.Error(err)
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to match password",
-			Data:    nil,
-		}
-	}
-	if !done {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Password must contain 1 upper case character",
-			Data:    nil,
-		}
-	}
-	done, err = regexp.MatchString("([0-9])+", credential.Password)
-	if err != nil {
-		log.Error(err)
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to match password",
-			Data:    nil,
-		}
-	}
-	if !done {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Password must contain 1 special character",
-			Data:    nil,
-		}
-	}
 	hashedPassword, err := crypto.GeneratePasswordHash([]byte(credential.Password), []byte(newUser.Id))
 	if err != nil {
 		log.Error(err.Error())

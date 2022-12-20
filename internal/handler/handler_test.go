@@ -108,7 +108,7 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				by, err := json.Marshal(model.SignUpCredentials{
 					Name:             "Vatsal",
 					Email:            "vatsal@gmail.com",
-					Password:         "Abc@123",
+					Password:         "AbcDe@123",
 					RegistrationDate: "15-11-2022 00:00:00",
 				})
 				if err != nil {
@@ -153,8 +153,8 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				var response respModel.Response
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
-					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrReadingReqBody),
+					Status:  http.StatusInternalServerError,
+					Message: "request body read : test error",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -181,7 +181,7 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrUnmarshall),
+					Message: "put data into data: unexpected end of JSON input",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -217,7 +217,43 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrValidate),
+					Message: "validation 1: field <Name> with value <> failed for <required> validation.\n2: field <Password> with value <Abc@123> failed for <min> validation.\n",
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: SignUp:: Password Validate",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.SignUpCredentials{
+					Name:             "vatsal",
+					Email:            "vatsal@gmail.com",
+					Password:         "Abcdefghj",
+					RegistrationDate: "15-11-2022 00:00:00",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: "Password must contain 1 numeric character",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -241,7 +277,7 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				by, err := json.Marshal(model.SignUpCredentials{
 					Name:             "Vatsal",
 					Email:            "vatsal@gmail.com",
-					Password:         "Abc@123",
+					Password:         "Abcde@123",
 					RegistrationDate: "ABC",
 				})
 				if err != nil {
@@ -303,7 +339,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				}
 				by, err := json.Marshal(model.LoginCredentials{
 					Email:    "vatsal@gmail.com",
-					Password: "Abc@123",
+					Password: "Abcde@123",
 				})
 				if err != nil {
 					t.Fail()
@@ -346,8 +382,8 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				var response respModel.Response
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
-					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrReadingReqBody),
+					Status:  http.StatusInternalServerError,
+					Message: "request body read : test error",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -374,7 +410,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrUnmarshall),
+					Message: "put data into data: unexpected end of JSON input",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -390,8 +426,8 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 					logic: mockLogic,
 				}
 				by, err := json.Marshal(model.LoginCredentials{
-					Email:    "",
-					Password: "Abc@123",
+					Email:    "Vatsal@gmail.com",
+					Password: "A@123",
 				})
 				if err != nil {
 					t.Fail()
@@ -408,7 +444,41 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrValidate),
+					Message: "validation 1: field <Password> with value <A@123> failed for <min> validation.\n",
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: Login:: Password Validate failure",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.LoginCredentials{
+					Email:    "Vatsal@gmail.com",
+					Password: "aasdfghjkl",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: "Password must contain 1 upper case character",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -490,8 +560,8 @@ func Test_userManagementServiceLogic_Activate(t *testing.T) {
 				var response respModel.Response
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
-					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrReadingReqBody),
+					Status:  http.StatusInternalServerError,
+					Message: "request body read : test error",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -518,7 +588,7 @@ func Test_userManagementServiceLogic_Activate(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrUnmarshall),
+					Message: "put data into data: unexpected end of JSON input",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
