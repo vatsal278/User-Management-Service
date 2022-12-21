@@ -346,6 +346,7 @@ func TestUserMgmtMiddleware_ExtractUser(t *testing.T) {
 				JwtSvc: config.JWTSvc{
 					JwtSvc: jwt,
 				},
+				Cfg: &config.Config{MessageQueue: config.MsgQueueCfg{SvcUrl: ""}},
 			})
 			hit = false
 			x := middleware.ExtractUser(http.HandlerFunc(test))

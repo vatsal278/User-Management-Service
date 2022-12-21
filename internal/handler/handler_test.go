@@ -253,7 +253,7 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: "Password must contain 1 numeric character",
+					Message: codes.GetErr(codes.ErrPassNumeric),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -478,7 +478,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: "Password must contain 1 upper case character",
+					Message: codes.GetErr(codes.ErrPassUpperCase),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {

@@ -23,8 +23,8 @@ type UserMgmtSvcLogicIer interface {
 	HealthCheck() bool
 	Signup(model.SignUpCredentials) *respModel.Response
 	Login(http.ResponseWriter, model.LoginCredentials) *respModel.Response
-	UserData(any) *respModel.Response
-	Activate(id any) *respModel.Response
+	UserData(string) *respModel.Response
+	Activate(id string) *respModel.Response
 }
 
 type userMgmtSvcLogic struct {
@@ -201,7 +201,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 	}
 }
 
-func (l userMgmtSvcLogic) Activate(id any) *respModel.Response {
+func (l userMgmtSvcLogic) Activate(id string) *respModel.Response {
 	err := l.DsSvc.Update(map[string]interface{}{"active": true}, map[string]interface{}{"user_id": id})
 	if err != nil {
 		log.Error(err)
@@ -218,17 +218,8 @@ func (l userMgmtSvcLogic) Activate(id any) *respModel.Response {
 	}
 }
 
-func (l userMgmtSvcLogic) UserData(id any) *respModel.Response {
-	i, ok := id.(string)
-	if !ok {
-		log.Error("cant assert id")
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: codes.GetErr(codes.ErrAssertUserid),
-			Data:    nil,
-		}
-	}
-	user, err := l.DsSvc.Get(map[string]interface{}{"user_id": i})
+func (l userMgmtSvcLogic) UserData(id string) *respModel.Response {
+	user, err := l.DsSvc.Get(map[string]interface{}{"user_id": id})
 	if err != nil {
 		log.Error(err)
 		return &respModel.Response{

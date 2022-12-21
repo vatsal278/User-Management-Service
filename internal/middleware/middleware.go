@@ -37,7 +37,6 @@ func (u UserMgmtMiddleware) ExtractUser(next http.Handler) http.Handler {
 		cookie, err := r.Cookie("token")
 		if err != nil {
 			log.Error(err)
-			//user need t login err msg
 			response.ToJson(w, http.StatusUnauthorized, codes.GetErr(codes.ErrUnauthorized), nil)
 			return
 		}
@@ -79,7 +78,7 @@ func (u UserMgmtMiddleware) ScreenRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var urlMatch bool
 		if r.UserAgent() != u.cfg.MessageQueue.UserAgent {
-			log.Info(codes.GetErr(codes.ErrUnauthorizedAgent))
+			log.Error(codes.GetErr(codes.ErrUnauthorizedAgent))
 			response.ToJson(w, http.StatusUnauthorized, codes.GetErr(codes.ErrUnauthorizedAgent), nil)
 			return
 		}
@@ -90,7 +89,7 @@ func (u UserMgmtMiddleware) ScreenRequest(next http.Handler) http.Handler {
 				}
 			}
 			if urlMatch != true {
-				log.Info(codes.GetErr(codes.ErrUnauthorizedUrl))
+				log.Error(codes.GetErr(codes.ErrUnauthorizedUrl))
 				response.ToJson(w, http.StatusUnauthorized, codes.GetErr(codes.ErrUnauthorizedUrl), nil)
 				return
 			}

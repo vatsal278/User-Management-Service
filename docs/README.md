@@ -9,12 +9,6 @@
 
 ## Starting the UserManagementService
 
-* start all the associated containers using command :
-```
-docker compose up
-```
-
-### You can also run this api locally using below steps:
 * Start the Docker container for mysql with command :
 ```
 docker run --rm --env MYSQL_ROOT_PASSWORD=pass --env MYSQL_DATABASE=usermgmt --publish 9095:3306 --name mysql -d mysql
@@ -27,7 +21,7 @@ go run .\cmd\UserManagementService\main.go
 ### To check the code coverage
 ```
 cd docs
-go tool cover -html=coverage
+go tool cover -html=cover.out
 ```
 ## User Management Service:
 

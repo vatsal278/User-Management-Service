@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"errors"
 	"github.com/PereRohit/util/log"
-	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/request"
 	"github.com/PereRohit/util/response"
 	"github.com/vatsal278/UserManagementService/internal/codes"
@@ -33,80 +33,36 @@ type userMgmtSvc struct {
 	logic logic.UserMgmtSvcLogicIer
 }
 
-func validatePass(pass string) *respModel.Response {
-	if len(pass) < 8 {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Password must be 8 characters long",
-			Data:    nil,
-		}
-
-	}
+func validatePass(pass string) error {
 	done, err := regexp.MatchString("([a-z])+", pass)
 	if err != nil {
-		log.Error(err)
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to match password",
-			Data:    nil,
-		}
+		return errors.New(codes.GetErr(codes.ErrPassRegex))
 	}
 	if !done {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Password must contain 1 lower case character",
-			Data:    nil,
-		}
+		return errors.New(codes.GetErr(codes.ErrPassLowerCase))
 	}
 	done, err = regexp.MatchString("([A-Z])+", pass)
 	if err != nil {
-		log.Error(err)
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to match password",
-			Data:    nil,
-		}
+		return errors.New(codes.GetErr(codes.ErrPassRegex))
 	}
 	if !done {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Password must contain 1 upper case character",
-			Data:    nil,
-		}
+		return errors.New(codes.GetErr(codes.ErrPassUpperCase))
 	}
 	done, err = regexp.MatchString("([0-9])+", pass)
 	if err != nil {
-		log.Error(err)
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to match password",
-			Data:    nil,
-		}
+		return errors.New(codes.GetErr(codes.ErrPassRegex))
 	}
 	if !done {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Password must contain 1 numeric character",
-			Data:    nil,
-		}
+		return errors.New(codes.GetErr(codes.ErrPassNumeric))
 	}
-	done, err = regexp.MatchString("([@_])+", pass)
+	done, err = regexp.MatchString("([@.,$?])+", pass)
 	if err != nil {
-		log.Error(err)
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to match password",
-			Data:    nil,
-		}
+		return errors.New(codes.GetErr(codes.ErrPassRegex))
 	}
 	if !done {
-		return &respModel.Response{
-			Status:  http.StatusBadRequest,
-			Message: "Password must contain 1 numeric character",
-			Data:    nil,
-		}
+		return errors.New(codes.GetErr(codes.ErrPassSpecial))
 	}
-	return &respModel.Response{Status: http.StatusOK}
+	return nil
 }
 func NewUserMgmtSvc(ds datasource.DataSourceI, jwtService jwtSvc.JWTService, msgQueue config.MsgQueue, cookie config.CookieStruct) UserMgmtSvcHandler {
 	svc := &userMgmtSvc{
@@ -137,9 +93,14 @@ func (svc userMgmtSvc) SignUp(w http.ResponseWriter, r *http.Request) {
 		response.ToJson(w, status, err.Error(), nil)
 		return
 	}
-	resp := validatePass(credential.Password)
-	if resp.Status != http.StatusOK {
-		response.ToJson(w, resp.Status, resp.Message, resp.Data)
+	err = validatePass(credential.Password)
+	if err != nil {
+		log.Error(err)
+		if err.Error() != codes.GetErr(codes.ErrPassRegex) {
+			response.ToJson(w, http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		response.ToJson(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 	credential.RegistrationTimestamp, err = time.Parse("02-01-2006 15:04:05", credential.RegistrationDate)
@@ -148,7 +109,7 @@ func (svc userMgmtSvc) SignUp(w http.ResponseWriter, r *http.Request) {
 		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrParseRegDate), nil)
 		return
 	}
-	resp = svc.logic.Signup(credential)
+	resp := svc.logic.Signup(credential)
 	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 }
 func (svc userMgmtSvc) Login(w http.ResponseWriter, r *http.Request) {
@@ -159,12 +120,17 @@ func (svc userMgmtSvc) Login(w http.ResponseWriter, r *http.Request) {
 		response.ToJson(w, status, err.Error(), nil)
 		return
 	}
-	resp := validatePass(credential.Password)
-	if resp.Status != http.StatusOK {
-		response.ToJson(w, resp.Status, resp.Message, resp.Data)
+	err = validatePass(credential.Password)
+	if err != nil {
+		log.Error(err)
+		if err.Error() != codes.GetErr(codes.ErrPassRegex) {
+			response.ToJson(w, http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		response.ToJson(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
-	resp = svc.logic.Login(w, credential)
+	resp := svc.logic.Login(w, credential)
 	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 }
 func (svc userMgmtSvc) Activation(w http.ResponseWriter, r *http.Request) {
@@ -181,6 +147,6 @@ func (svc userMgmtSvc) Activation(w http.ResponseWriter, r *http.Request) {
 
 func (svc userMgmtSvc) UserDetails(w http.ResponseWriter, r *http.Request) {
 	id := session.GetSession(r.Context())
-	resp := svc.logic.UserData(id)
+	resp := svc.logic.UserData(id.(string))
 	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 }
