@@ -37,7 +37,7 @@ func TestInitSvcConfig(t *testing.T) {
 						DataBase: DbCfg{
 							Driver: "mysql",
 						},
-						MessageQueue: MsgQueueCfg{SvcUrl: srv.URL},
+						MessageQueue: MsgQueueCfg{SvcUrl: srv.URL, ActivatedAccountChannel: "account.activation.channel"},
 						Cookie:       CookieStruct{ExpiryStr: "5m"},
 					},
 				}

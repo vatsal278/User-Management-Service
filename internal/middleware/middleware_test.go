@@ -373,6 +373,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 					AllowedUrl: []string{"192.0.2.1:1234", "value2", "value3"},
 					UserAgent:  "UserAgent",
 					UrlCheck:   true,
+					Key:        "",
 				}},
 			setupFunc: func() (*http.Request, authentication.JWTService) {
 
@@ -384,6 +385,7 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 			validator: func(res *httptest.ResponseRecorder) {
 				if hit != true {
 					t.Errorf("Want: %v, Got: %v", true, hit)
+					return
 				}
 				by, _ := ioutil.ReadAll(res.Body)
 				result := model.Response{}
@@ -521,7 +523,6 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 			// STEP 1: seting up all instances for the specific test case
 			res := httptest.NewRecorder()
 			req, jwt := tt.setupFunc()
-
 			middleware := NewUserMgmtMiddleware(&config.SvcConfig{
 				Cfg: &tt.config,
 				JwtSvc: config.JWTSvc{

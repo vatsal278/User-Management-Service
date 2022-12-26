@@ -15,9 +15,6 @@ import (
 )
 
 func TestRegister(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping testing due to unavailability of testing environment")
-	}
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 

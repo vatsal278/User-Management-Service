@@ -112,13 +112,22 @@ func InitSvcConfig(cfg Config) *SvcConfig {
 	if err != nil {
 		panic(err.Error())
 	}
-	privateKey, err := crypt.PEMStrAsPrivKey(cfg.MessageQueue.Key)
-	if err != nil {
-		panic(err.Error())
+	privateKey := &rsa.PrivateKey{}
+	pubKey := ""
+	if cfg.MessageQueue.Key != "" {
+		privateKey, err = crypt.PEMStrAsPrivKey(cfg.MessageQueue.Key)
+		if err != nil {
+			panic(err.Error())
+		}
+		publicKey := privateKey.PublicKey
+		pubKey = crypt.PubKeyAsPEMStr(&publicKey)
 	}
-	publicKey := privateKey.PublicKey
-	pubKey := crypt.PubKeyAsPEMStr(&publicKey)
-	err = msgBrokerSvc.RegisterSub("PUT", "http://localhost/v1/activate", pubKey, cfg.MessageQueue.ActivatedAccountChannel)
+	urlHost := cfg.ServerConfig.Host
+	if urlHost == "" {
+		urlHost = "http://localhost"
+	}
+	url := urlHost + ":" + cfg.ServerConfig.Port + "/" + cfg.ServiceRouteVersion + "/activate"
+	err = msgBrokerSvc.RegisterSub("PUT", url, pubKey, cfg.MessageQueue.ActivatedAccountChannel)
 	if err != nil {
 		panic(err.Error())
 	}

@@ -517,12 +517,12 @@ func Test_userManagementServiceLogic_UserDetails(t *testing.T) {
 				mockDs := mock.NewMockDataSourceI(mockCtrl)
 				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
 				var users []model.User
-				users = append(users, model.User{Email: "vatsal@gmail.com", Name: "Vatsal", Company: "perennial"})
+				users = append(users, model.User{Email: "vatsal@gmail.co.in", Name: "Vatsal", Company: "perennial"})
 				mockDs.EXPECT().Get(map[string]interface{}{"user_id": "123"}).Times(1).Return(users, nil)
 				return mockDs, mockJwtSvc, config.MsgQueue{}, config.CookieStruct{}
 			},
 			want: func(resp *respModel.Response) {
-				var users = model.UserDetails{Email: "vaxxal@xxx.com", Name: "Vatsal", Company: "perennial"}
+				var users = model.UserDetails{Email: "vaxxal@xxx.co.in", Name: "Vatsal", Company: "perennial"}
 				temp := respModel.Response{
 					Status:  http.StatusOK,
 					Message: "SUCCESS",

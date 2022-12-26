@@ -242,9 +242,9 @@ func (l userMgmtSvcLogic) UserData(id string) *respModel.Response {
 		a[i] = "x"
 	}
 	e := strings.Join(a, "")
-	eDomain := strings.Split(eSlice[1], ".")
-	eDomain[0] = "xxx"
-	maskedEmail := e + "@" + eDomain[0] + "." + eDomain[1]
+	first, last, _ := strings.Cut(eSlice[1], ".")
+	first = "xxx"
+	maskedEmail := e + "@" + first + "." + last
 
 	userDetails := model.UserDetails{
 		Name:      user[len(user)-1].Name,

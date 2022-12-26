@@ -628,7 +628,7 @@ func Test_userManagementServiceLogic_User(t *testing.T) {
 				svc := &userMgmtSvc{
 					logic: mockLogic,
 				}
-				by, err := json.Marshal(map[string]interface{}{"user_id": "123"})
+				by, err := json.Marshal(map[string]string{"user_id": "123"})
 				if err != nil {
 					t.Fail()
 				}
