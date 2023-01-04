@@ -13,6 +13,9 @@
 ```
 docker run --rm --env MYSQL_ROOT_PASSWORD=pass --env MYSQL_DATABASE=usermgmt --publish 9095:3306 --name mysql -d mysql
 ```
+* Start the MsgBroker service using steps as described in the [link](https://github.com/vatsal278/msgbroker)
+
+ 
 * Start the Api locally with command : 
 ```
 go run .\cmd\UserManagementService\main.go
