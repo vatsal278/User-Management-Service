@@ -20,7 +20,7 @@ docker run --rm --env MYSQL_ROOT_PASSWORD=pass --env MYSQL_DATABASE=usermgmt --p
 ```
 go run .\cmd\UserManagementService\main.go
 ```
-### You can test the api using post man, just import the [collection](https://github.com/vatsal278/UserManagementService/blob/4eb499337edbb738b524cf05ac44a4da362875ce/docs/user%20management%20svc.postman_collection.json) into your postman app.
+### You can test the api using post man, just import the [Postman Collection](https://github.com/vatsal278/UserManagementService/blob/4eb499337edbb738b524cf05ac44a4da362875ce/docs/user%20management%20svc.postman_collection.json) into your postman app.
 ### To check the code coverage
 ```
 cd docs
