@@ -126,7 +126,11 @@ func InitSvcConfig(cfg Config) *SvcConfig {
 	if urlHost == "" {
 		urlHost = "http://localhost"
 	}
-	url := urlHost + ":" + cfg.ServerConfig.Port + "/" + cfg.ServiceRouteVersion + "/activate"
+	urlPort := cfg.ServerConfig.Host
+	if urlPort == "" {
+		urlPort = "80"
+	}
+	url := urlHost + ":" + urlPort + "/" + cfg.ServiceRouteVersion + "/activate"
 	err = msgBrokerSvc.RegisterSub("PUT", url, pubKey, cfg.MessageQueue.ActivatedAccountChannel)
 	if err != nil {
 		panic(err.Error())

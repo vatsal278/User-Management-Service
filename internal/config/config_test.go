@@ -29,6 +29,9 @@ func TestInitSvcConfig(t *testing.T) {
 				router.HandleFunc("/register/publisher", func(w http.ResponseWriter, r *http.Request) {
 					response.ToJson(w, http.StatusOK, "Success", map[string]interface{}{"id": "123"})
 				})
+				router.HandleFunc("/register/subscriber", func(w http.ResponseWriter, r *http.Request) {
+					response.ToJson(w, http.StatusOK, "Success", nil)
+				})
 				srv := httptest.NewServer(router)
 				return args{
 					cfg: Config{
@@ -37,7 +40,7 @@ func TestInitSvcConfig(t *testing.T) {
 						DataBase: DbCfg{
 							Driver: "mysql",
 						},
-						MessageQueue: MsgQueueCfg{SvcUrl: srv.URL, ActivatedAccountChannel: "account.activation.channel"},
+						MessageQueue: MsgQueueCfg{SvcUrl: srv.URL, ActivatedAccountChannel: "account.activation.channel", NewAccountChannel: "new.account.channel"},
 						Cookie:       CookieStruct{ExpiryStr: "5m"},
 					},
 				}
@@ -52,12 +55,12 @@ func TestInitSvcConfig(t *testing.T) {
 						DataBase: DbCfg{
 							Driver: "mysql",
 						},
-						MessageQueue: MsgQueueCfg{SvcUrl: arg.cfg.MessageQueue.SvcUrl},
+						MessageQueue: MsgQueueCfg{SvcUrl: arg.cfg.MessageQueue.SvcUrl, NewAccountChannel: "new.account.channel", ActivatedAccountChannel: "account.activation.channel"},
 						Cookie:       CookieStruct{Expiry: time.Minute * 5, ExpiryStr: "5m"},
 					},
 					ServiceRouteVersion: "v2",
 					SvrCfg:              config.ServerConfig{},
-					MsgBrokerSvc:        MsgQueue{MsgBroker: s, PubId: "123"},
+					MsgBrokerSvc:        MsgQueue{MsgBroker: s, PubId: "123", Channel: "new.account.channel"},
 				}
 				return required
 			},

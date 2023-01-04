@@ -147,6 +147,11 @@ func (svc userMgmtSvc) Activation(w http.ResponseWriter, r *http.Request) {
 
 func (svc userMgmtSvc) UserDetails(w http.ResponseWriter, r *http.Request) {
 	id := session.GetSession(r.Context())
-	resp := svc.logic.UserData(id.(string))
+	idStr, ok := id.(string)
+	if !ok {
+		response.ToJson(w, http.StatusBadRequest, codes.GetErr(codes.ErrAssertUserid), nil)
+		return
+	}
+	resp := svc.logic.UserData(idStr)
 	response.ToJson(w, resp.Status, resp.Message, resp.Data)
 }

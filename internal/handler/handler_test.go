@@ -9,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/vatsal278/UserManagementService/internal/codes"
 	"github.com/vatsal278/UserManagementService/internal/model"
+	"github.com/vatsal278/UserManagementService/pkg/session"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -628,12 +629,9 @@ func Test_userManagementServiceLogic_User(t *testing.T) {
 				svc := &userMgmtSvc{
 					logic: mockLogic,
 				}
-				by, err := json.Marshal(map[string]string{"user_id": "123"})
-				if err != nil {
-					t.Fail()
-				}
-				r := httptest.NewRequest("PUT", "/activate", bytes.NewBuffer(by))
-				return svc, r
+				r := httptest.NewRequest("PUT", "/activate", nil)
+				ctx := session.SetSession(r.Context(), "1234")
+				return svc, r.WithContext(ctx)
 			},
 			want: func(rec httptest.ResponseRecorder) {
 				b, err := ioutil.ReadAll(rec.Body)
@@ -645,6 +643,33 @@ func Test_userManagementServiceLogic_User(t *testing.T) {
 				tempResp := &respModel.Response{
 					Status:  http.StatusOK,
 					Message: codes.GetErr(codes.Success),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				r := httptest.NewRequest("PUT", "/activate", nil)
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrAssertUserid),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {

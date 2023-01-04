@@ -43,6 +43,7 @@ const (
 	ErrPassNumeric
 	ErrPassSpecial
 	ErrPassRegex
+	ErrExtractMsg
 )
 
 var errCodes = map[errCode]string{
@@ -82,6 +83,7 @@ var errCodes = map[errCode]string{
 	ErrPassUpperCase:       "password must contain 1 upper case character",
 	ErrPassNumeric:         "password must contain 1 numeric character",
 	ErrPassSpecial:         "password must contain 1 special character",
+	ErrExtractMsg:          "unable to extract msg",
 }
 
 func GetErr(code errCode) string {

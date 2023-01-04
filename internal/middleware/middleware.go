@@ -97,6 +97,7 @@ func (u UserMgmtMiddleware) ScreenRequest(next http.Handler) http.Handler {
 		decryptMsg, err := u.msg(r.Body)
 		if err != nil {
 			log.Error(err)
+			response.ToJson(w, http.StatusInternalServerError, codes.GetErr(codes.ErrExtractMsg), nil)
 			return
 		}
 		r.Body = io.NopCloser(bytes.NewBuffer([]byte(decryptMsg)))

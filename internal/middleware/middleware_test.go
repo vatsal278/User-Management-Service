@@ -12,6 +12,7 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/UserManagementService/pkg/mock"
 	"github.com/vatsal278/UserManagementService/pkg/session"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -361,10 +362,11 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	tests := []struct {
-		name      string
-		config    config.Config
-		setupFunc func() (*http.Request, authentication.JWTService)
-		validator func(*httptest.ResponseRecorder)
+		name           string
+		config         config.Config
+		extractMsgFunc func(closer io.ReadCloser) (string, error)
+		setupFunc      func() (*http.Request, authentication.JWTService)
+		validator      func(*httptest.ResponseRecorder)
 	}{
 		{
 			name: "SUCCESS::Screen Request",
@@ -381,6 +383,9 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 				jwt := mock.NewMockJWTService(mockCtrl)
 				req.Header.Set("User-Agent", "UserAgent")
 				return req, jwt
+			},
+			extractMsgFunc: func(closer io.ReadCloser) (string, error) {
+				return "", nil
 			},
 			validator: func(res *httptest.ResponseRecorder) {
 				if hit != true {
@@ -420,6 +425,9 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 				req.Header.Set("User-Agent", "UserAgent")
 				return req, jwt
 			},
+			extractMsgFunc: func(closer io.ReadCloser) (string, error) {
+				return "", nil
+			},
 			validator: func(res *httptest.ResponseRecorder) {
 				if hit != false {
 					t.Errorf("Want: %v, Got: %v", false, hit)
@@ -457,6 +465,9 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 				req.Header.Set("User-Agent", "UserAgent")
 				return req, jwt
 			},
+			extractMsgFunc: func(closer io.ReadCloser) (string, error) {
+				return "", nil
+			},
 			validator: func(res *httptest.ResponseRecorder) {
 				if hit != false {
 					t.Errorf("Want: %v, Got: %v", false, hit)
@@ -493,6 +504,9 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 				req.Header.Set("User-Agent", "UserAgent")
 				return req, jwt
 			},
+			extractMsgFunc: func(closer io.ReadCloser) (string, error) {
+				return "", nil
+			},
 			validator: func(res *httptest.ResponseRecorder) {
 				if hit != true {
 					t.Errorf("Want: %v, Got: %v", true, hit)
@@ -515,6 +529,45 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "Failure::Screen Request:: decryptMsg failure",
+			config: config.Config{
+				MessageQueue: config.MsgQueueCfg{
+					UrlCheck:  false,
+					UserAgent: "UserAgent",
+				}},
+			setupFunc: func() (*http.Request, authentication.JWTService) {
+
+				req := httptest.NewRequest(http.MethodGet, "http://localhost:80", nil)
+				jwt := mock.NewMockJWTService(mockCtrl)
+				req.Header.Set("User-Agent", "UserAgent")
+				return req, jwt
+			},
+			extractMsgFunc: func(closer io.ReadCloser) (string, error) {
+				return "", errors.New("")
+			},
+			validator: func(res *httptest.ResponseRecorder) {
+				if hit != false {
+					t.Errorf("Want: %v, Got: %v", false, hit)
+				}
+				by, _ := ioutil.ReadAll(res.Body)
+				result := model.Response{}
+				err := json.Unmarshal(by, &result)
+				if err != nil {
+					t.Log(err)
+					t.Fail()
+					return
+				}
+				expected := &model.Response{
+					Status:  http.StatusInternalServerError,
+					Message: codes.GetErr(codes.ErrExtractMsg),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&result, expected) {
+					t.Errorf("Want: %v, Got: %v", expected, result)
+				}
+			},
+		},
 	}
 
 	// to execute the tests in the table
@@ -523,12 +576,11 @@ func TestUserMgmtMiddleware_ScreenRequest(t *testing.T) {
 			// STEP 1: seting up all instances for the specific test case
 			res := httptest.NewRecorder()
 			req, jwt := tt.setupFunc()
-			middleware := NewUserMgmtMiddleware(&config.SvcConfig{
-				Cfg: &tt.config,
-				JwtSvc: config.JWTSvc{
-					JwtSvc: jwt,
-				},
-			})
+			cfg := config.SvcConfig{Cfg: &tt.config}
+			middleware := UserMgmtMiddleware{
+				msg: tt.extractMsgFunc,
+				jwt: jwt,
+				cfg: cfg.Cfg}
 			hit = false
 			x := middleware.ScreenRequest(http.HandlerFunc(test))
 			x.ServeHTTP(res, req)
