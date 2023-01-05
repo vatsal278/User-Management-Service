@@ -160,13 +160,6 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 		}
 	}
 	id := result[0].Id
-	if err != nil {
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: codes.GetErr(codes.ErrDuration),
-			Data:    nil,
-		}
-	}
 	jwtToken, err := l.jwtService.GenerateToken(jwt.SigningMethodHS256, id, l.cookie.Expiry)
 	if err != nil {
 		return &respModel.Response{
