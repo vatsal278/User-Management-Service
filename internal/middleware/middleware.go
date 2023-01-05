@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"bytes"
 	"github.com/PereRohit/util/log"
 	"github.com/PereRohit/util/response"
 	"github.com/dgrijalva/jwt-go"
@@ -8,6 +9,8 @@ import (
 	svcCfg "github.com/vatsal278/UserManagementService/internal/config"
 	jwtSvc "github.com/vatsal278/UserManagementService/internal/repo/authentication"
 	"github.com/vatsal278/UserManagementService/pkg/session"
+	"github.com/vatsal278/msgbroker/pkg/sdk"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -15,12 +18,16 @@ import (
 type UserMgmtMiddleware struct {
 	cfg *svcCfg.Config
 	jwt jwtSvc.JWTService
+	msg func(io.ReadCloser) (string, error)
 }
 
 func NewUserMgmtMiddleware(cfg *svcCfg.SvcConfig) *UserMgmtMiddleware {
+	msgQueue := sdk.NewMsgBrokerSvc(cfg.Cfg.MessageQueue.SvcUrl)
+	msg := msgQueue.ExtractMsg(&cfg.MsgBrokerSvc.PrivateKey)
 	return &UserMgmtMiddleware{
 		cfg: cfg.Cfg,
 		jwt: cfg.JwtSvc.JwtSvc,
+		msg: msg,
 	}
 }
 
@@ -71,6 +78,7 @@ func (u UserMgmtMiddleware) ScreenRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var urlMatch bool
 		if r.UserAgent() != u.cfg.MessageQueue.UserAgent {
+			log.Error(codes.GetErr(codes.ErrUnauthorizedAgent))
 			response.ToJson(w, http.StatusUnauthorized, codes.GetErr(codes.ErrUnauthorizedAgent), nil)
 			return
 		}
@@ -81,10 +89,18 @@ func (u UserMgmtMiddleware) ScreenRequest(next http.Handler) http.Handler {
 				}
 			}
 			if urlMatch != true {
+				log.Error(codes.GetErr(codes.ErrUnauthorizedUrl))
 				response.ToJson(w, http.StatusUnauthorized, codes.GetErr(codes.ErrUnauthorizedUrl), nil)
 				return
 			}
 		}
+		decryptMsg, err := u.msg(r.Body)
+		if err != nil {
+			log.Error(err)
+			response.ToJson(w, http.StatusInternalServerError, codes.GetErr(codes.ErrExtractMsg), nil)
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewBuffer([]byte(decryptMsg)))
 		next.ServeHTTP(w, r)
 	})
 }

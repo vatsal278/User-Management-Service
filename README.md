@@ -2,13 +2,177 @@
 
 [![Build](https://github.com/vatsal278/UserManagementService/actions/workflows/build.yml/badge.svg)](https://github.com/vatsal278/UserManagementService/actions/workflows/build.yml) [![Test Cases](https://github.com/vatsal278/UserManagementService/actions/workflows/test.yml/badge.svg)](https://github.com/vatsal278/UserManagementService/actions/workflows/test.yml) [![Codecov](https://codecov.io/gh/vatsal278/UserManagementService/branch/main/graph/badge.svg)](https://codecov.io/gh/vatsal278/UserManagementService)
 
-### Get codecov badge
-1. Log in to [codecov.io](https://app.codecov.io/login/gh?utm_department=marketing&utm_source=direct) with GitHub.
-2. Make a commit or raise a PR that will trigger the repos built-in GitHub action.
-3. When you visit the codecov dashboard now, this repo should be enabled automatically. It might take some time for this repo to be reflected on the codecov dashboard.
-Please re-run failed jobs  if an error like `failed to upload...` is seen.
-4. In the dashboard, navigate to this repo -> Settings -> Badges & Graphs.
-5. Copy the Markdown script and paste it in the README.md where you want the codecov badge to be visible.
+* This service was created using Golang.
+* This service has used clean code principle and appropriate go directory structure.
+* This service is completely unit tested and all the errors have been handled.
+* This service utilises messageBroker service for communicating with other micro services.
 
-___
-##### Generated with [gosvc cli](https://github.com/PereRohit/gosvc)
+## Starting the UserManagementService
+
+* Start the Docker container for mysql with command :
+```
+docker run --rm --env MYSQL_ROOT_PASSWORD=pass --env MYSQL_DATABASE=usermgmt --publish 9095:3306 --name mysql -d mysql
+```
+* Start the MsgBroker service using steps as described in the [link](https://github.com/vatsal278/msgbroker)
+
+ 
+* Start the Api locally with command : 
+```
+go run .\cmd\UserManagementService\main.go
+```
+### You can test the api using post man, just import the [Postman Collection](./docs/UserMgmtSvc.postman_collection.json) into your postman app.
+### To check the code coverage
+```
+cd docs
+go tool cover -html=coverage
+```
+## User Management Service:
+
+This application is split up into multiple components, each having a particular feature and use case. This will allow individual scale up/down and can be started up as micro-services.
+
+HTTP calls are made across micro-services.
+
+They are made asynchronous & de-coupled via pub-sub or messaging queues.
+
+*For testing individual services, these can be via direct HTTP calls*
+
+
+All requests & responses follow json encoding.
+Requests are specific to the concerned endpoint while responses are of the following json format & specification:
+>
+>    Response Header: HTTP code
+>
+>    Response Body(json):
+>    ```json
+>    {
+>       "status": <HTTP status code>,
+>       "message": "<message>",
+>       "data": {
+>        // object to contain the appropriate response data per API
+>       }
+>    }
+>    ```
+
+## User Management Service:
+
+### Registration
+A first time user hits this endpoint to create a new account. The account will be created in a Relational DB with `email` as the `primary key`, `company_name`, `name` & `password` as `varchar`, `registered_on` & `updated_on` as `timestamp`, `active` as `boolean`, and `active_devices` as `integer`.
+
+#### Specification:
+Method: `POST`
+
+Path: `/register`
+
+Request Body:
+```json
+{
+  "name": "<Full Name>",
+  "registration_date": "<DD-MM-YYYY HH:MM:SS format>",
+  "email": "<proper email>",
+  "password": "<minimum 8 characters with at least 1 upper case, 1 lower      case & 1 special character out of[,.@$?]>"
+}
+```
+Success to follow response as specified:
+
+Response Header: HTTP 201
+
+Response Body(json):
+```json
+{
+  "status": 201,
+  "message": "SUCCESS",
+  "data": "Account activation in progress"
+}
+```
+
+### Login
+A registered user whose account is activated(active column for user is true), uses this endpoint to login to their account via email & password combination.
+
+#### Specification:
+Method: `POST`
+
+Path: `/login`
+
+Request Body:
+```json
+{
+  "email": "<proper email>",
+  "password": "<minimum 8 characters with at least 1 upper case, 1 lower      case & 1 special character out of[,.@$?]>"
+}
+```
+Success to follow response as specified:
+
+Response Header: HTTP 200
+
+Response Body(json):
+```json
+{
+  "status": 200,
+  "message": "SUCCESS",
+  "data": nil
+}
+```
+
+### Activation
+This endpoint will be used to set the active status true for the user, thus allowing the user to log into the dashboard. This endpoint will only allow requests that are directly obtained by the message queue via middleware.
+
+#### Specification:
+Method: `PUT`
+
+Path: `/activate`
+
+Request Body:
+```json
+{
+  "user_id": "<user_id for the record to activate>"
+}
+```
+Success to follow response as specified:
+
+Response Header: HTTP 200
+
+Response Body(json):
+```json
+{
+  "status": 200,
+  "message": "SUCCESS",
+  "data": nil
+}
+```
+
+### User Details
+This gets the user details for the logged in user. The logged in user can be validated by the presence of  the cookie, after successful login.
+- The extraction of the user_id from the cookie is done in a middleware and this `user_id`, after successful extraction, is put in the context for downstream handlers to get this data.
+
+#### Specification:
+Method: `GET`
+
+Path: `/user`
+
+Request Body: `not required.`
+
+Success to follow response as specified:
+
+Response Header: HTTP 200
+
+Response Body(json):
+```json
+{
+  "status": 200,
+  "message": "SUCCESS",
+  "data": {
+    "name": "<full name>",
+     // if email was abcde123@gmail.com
+    "email": "<masked email -> abxxxxx23@xxx.com>",
+    "company": "<company name>",
+    "last_login": "<timestamp>"
+  }
+}
+```
+
+### Middleware(s):
+1. ExtractUser: extracts the user_id from the cookie passed in the request and forwards it in the context for downstream processing.
+2. ScreenRequest: allows requests only from the message queue to be passed downstream. The middleware checks the “`user-agent`” & request `URL` to identify requests originating from the message queue.
+   *The URL(s) of the message queue(s) is passed as a configuration to the service to allow requests only from URLs in the list*.
+
+

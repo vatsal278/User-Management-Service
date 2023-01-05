@@ -3,6 +3,7 @@ module github.com/vatsal278/UserManagementService
 go 1.18
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/PereRohit/util v0.0.4
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ggwhite/go-masker v1.0.9
@@ -10,7 +11,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
-	github.com/vatsal278/msgbroker v1.0.3
+	github.com/vatsal278/msgbroker v1.1.0
 	golang.org/x/net v0.0.0-20220607020251-c690dde0001d
 )
 

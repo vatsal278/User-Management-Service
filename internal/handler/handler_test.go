@@ -9,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/vatsal278/UserManagementService/internal/codes"
 	"github.com/vatsal278/UserManagementService/internal/model"
+	"github.com/vatsal278/UserManagementService/pkg/session"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -108,7 +109,7 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				by, err := json.Marshal(model.SignUpCredentials{
 					Name:             "Vatsal",
 					Email:            "vatsal@gmail.com",
-					Password:         "Abc@123",
+					Password:         "AbcDe@123",
 					RegistrationDate: "15-11-2022 00:00:00",
 				})
 				if err != nil {
@@ -153,8 +154,8 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				var response respModel.Response
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
-					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrReadingReqBody),
+					Status:  http.StatusInternalServerError,
+					Message: "request body read : test error",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -181,7 +182,7 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrUnmarshall),
+					Message: "put data into data: unexpected end of JSON input",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -217,7 +218,79 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrValidate),
+					Message: "validation 1: field <Name> with value <> failed for <required> validation.\n2: field <Password> with value <Abc@123> failed for <min> validation.\n",
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: SignUp:: Password Validate:: numeric",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.SignUpCredentials{
+					Name:             "vatsal",
+					Email:            "vatsal@gmail.com",
+					Password:         "Abcdefghj",
+					RegistrationDate: "15-11-2022 00:00:00",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrPassNumeric),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: SignUp:: Password Validate :: special char",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.SignUpCredentials{
+					Name:             "vatsal",
+					Email:            "vatsal@gmail.com",
+					Password:         "Abcdefghj1",
+					RegistrationDate: "15-11-2022 00:00:00",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrPassSpecial),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -241,7 +314,7 @@ func Test_userManagementServiceLogic_SignUp(t *testing.T) {
 				by, err := json.Marshal(model.SignUpCredentials{
 					Name:             "Vatsal",
 					Email:            "vatsal@gmail.com",
-					Password:         "Abc@123",
+					Password:         "Abcde@123",
 					RegistrationDate: "ABC",
 				})
 				if err != nil {
@@ -303,7 +376,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				}
 				by, err := json.Marshal(model.LoginCredentials{
 					Email:    "vatsal@gmail.com",
-					Password: "Abc@123",
+					Password: "Abcde@123",
 				})
 				if err != nil {
 					t.Fail()
@@ -346,8 +419,8 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				var response respModel.Response
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
-					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrReadingReqBody),
+					Status:  http.StatusInternalServerError,
+					Message: "request body read : test error",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -374,7 +447,7 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrUnmarshall),
+					Message: "put data into data: unexpected end of JSON input",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -390,8 +463,8 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 					logic: mockLogic,
 				}
 				by, err := json.Marshal(model.LoginCredentials{
-					Email:    "",
-					Password: "Abc@123",
+					Email:    "Vatsal@gmail.com",
+					Password: "A@123",
 				})
 				if err != nil {
 					t.Fail()
@@ -408,7 +481,75 @@ func Test_userManagementServiceLogic_Login(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrValidate),
+					Message: "validation 1: field <Password> with value <A@123> failed for <min> validation.\n",
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: Login:: Password Validate failure:: upper case",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.LoginCredentials{
+					Email:    "Vatsal@gmail.com",
+					Password: "aasdfghjkl",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrPassUpperCase),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure :: Login:: Password Validate failure:: lowercase",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				by, err := json.Marshal(model.LoginCredentials{
+					Email:    "Vatsal@gmail.com",
+					Password: "ASDFGHJKL",
+				})
+				if err != nil {
+					t.Fail()
+				}
+				r := httptest.NewRequest("POST", "/register", bytes.NewBuffer(by))
+				return svc, r
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrPassLowerCase),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -490,8 +631,8 @@ func Test_userManagementServiceLogic_Activate(t *testing.T) {
 				var response respModel.Response
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
-					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrReadingReqBody),
+					Status:  http.StatusInternalServerError,
+					Message: "request body read : test error",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -518,7 +659,7 @@ func Test_userManagementServiceLogic_Activate(t *testing.T) {
 				err = json.Unmarshal(b, &response)
 				tempResp := &respModel.Response{
 					Status:  http.StatusBadRequest,
-					Message: codes.GetErr(codes.ErrUnmarshall),
+					Message: "put data into data: unexpected end of JSON input",
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {
@@ -558,12 +699,9 @@ func Test_userManagementServiceLogic_User(t *testing.T) {
 				svc := &userMgmtSvc{
 					logic: mockLogic,
 				}
-				by, err := json.Marshal(map[string]interface{}{"user_id": "123"})
-				if err != nil {
-					t.Fail()
-				}
-				r := httptest.NewRequest("PUT", "/activate", bytes.NewBuffer(by))
-				return svc, r
+				r := httptest.NewRequest("PUT", "/activate", nil)
+				ctx := session.SetSession(r.Context(), "1234")
+				return svc, r.WithContext(ctx)
 			},
 			want: func(rec httptest.ResponseRecorder) {
 				b, err := ioutil.ReadAll(rec.Body)
@@ -575,6 +713,67 @@ func Test_userManagementServiceLogic_User(t *testing.T) {
 				tempResp := &respModel.Response{
 					Status:  http.StatusOK,
 					Message: codes.GetErr(codes.Success),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure:: logic :: internal server error",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				mockLogic.EXPECT().UserData("1234").Return(&respModel.Response{
+					Status:  http.StatusInternalServerError,
+					Message: codes.GetErr(codes.ErrAssertUserid),
+					Data:    nil,
+				})
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				r := httptest.NewRequest("PUT", "/activate", nil)
+				ctx := session.SetSession(r.Context(), "1234")
+				return svc, r.WithContext(ctx)
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusInternalServerError,
+					Message: codes.GetErr(codes.ErrAssertUserid),
+					Data:    nil,
+				}
+				if !reflect.DeepEqual(&response, tempResp) {
+					t.Errorf("Want: %v, Got: %v", tempResp, &response)
+				}
+			},
+		},
+		{
+			name: "Failure:: err asserting to string",
+			setup: func() (*userMgmtSvc, *http.Request) {
+				mockLogic := mock.NewMockUserMgmtSvcLogicIer(mockCtrl)
+				svc := &userMgmtSvc{
+					logic: mockLogic,
+				}
+				r := httptest.NewRequest("PUT", "/activate", nil)
+				ctx := session.SetSession(r.Context(), 1.11)
+				return svc, r.WithContext(ctx)
+			},
+			want: func(rec httptest.ResponseRecorder) {
+				b, err := ioutil.ReadAll(rec.Body)
+				if err != nil {
+					return
+				}
+				var response respModel.Response
+				err = json.Unmarshal(b, &response)
+				tempResp := &respModel.Response{
+					Status:  http.StatusBadRequest,
+					Message: codes.GetErr(codes.ErrAssertUserid),
 					Data:    nil,
 				}
 				if !reflect.DeepEqual(&response, tempResp) {

@@ -5,7 +5,6 @@ import (
 	respModel "github.com/PereRohit/util/model"
 	"github.com/PereRohit/util/testutil"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/ggwhite/go-masker"
 	"github.com/golang/mock/gomock"
 	"github.com/vatsal278/UserManagementService/internal/codes"
 	"github.com/vatsal278/UserManagementService/internal/config"
@@ -507,7 +506,7 @@ func Test_userManagementServiceLogic_UserDetails(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		credentials interface{}
+		credentials string
 		setup       func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct)
 		want        func(*respModel.Response)
 	}{
@@ -518,35 +517,16 @@ func Test_userManagementServiceLogic_UserDetails(t *testing.T) {
 				mockDs := mock.NewMockDataSourceI(mockCtrl)
 				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
 				var users []model.User
-				users = append(users, model.User{Email: "vatsal@gmail.com", Name: "Vatsal", Company: "perennial"})
+				users = append(users, model.User{Email: "vatsal@gmail.co.in", Name: "Vatsal", Company: "perennial"})
 				mockDs.EXPECT().Get(map[string]interface{}{"user_id": "123"}).Times(1).Return(users, nil)
 				return mockDs, mockJwtSvc, config.MsgQueue{}, config.CookieStruct{}
 			},
 			want: func(resp *respModel.Response) {
-				var users = model.UserDetails{Email: masker.Email("vatsal@gmail.com"), Name: "Vatsal", Company: "perennial"}
+				var users = model.UserDetails{Email: "vaxxal@xxx.co.in", Name: "Vatsal", Company: "perennial"}
 				temp := respModel.Response{
 					Status:  http.StatusOK,
 					Message: "SUCCESS",
 					Data:    users,
-				}
-				if !reflect.DeepEqual(resp, &temp) {
-					t.Errorf("Want: %v, Got: %v", &temp, resp)
-				}
-			},
-		},
-		{
-			name:        "Failure :: UserDetails",
-			credentials: true,
-			setup: func() (datasource.DataSourceI, authentication.JWTService, config.MsgQueue, config.CookieStruct) {
-				mockDs := mock.NewMockDataSourceI(mockCtrl)
-				mockJwtSvc := mock.NewMockJWTService(mockCtrl)
-				return mockDs, mockJwtSvc, config.MsgQueue{}, config.CookieStruct{}
-			},
-			want: func(resp *respModel.Response) {
-				temp := respModel.Response{
-					Status:  http.StatusInternalServerError,
-					Message: codes.GetErr(codes.ErrAssertUserid),
-					Data:    nil,
 				}
 				if !reflect.DeepEqual(resp, &temp) {
 					t.Errorf("Want: %v, Got: %v", &temp, resp)

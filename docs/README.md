@@ -1,4 +1,6 @@
-# Go Assignments
+# User Management Service
+
+[![Build](https://github.com/vatsal278/UserManagementService/actions/workflows/build.yml/badge.svg)](https://github.com/vatsal278/UserManagementService/actions/workflows/build.yml) [![Test Cases](https://github.com/vatsal278/UserManagementService/actions/workflows/test.yml/badge.svg)](https://github.com/vatsal278/UserManagementService/actions/workflows/test.yml) [![Codecov](https://codecov.io/gh/vatsal278/UserManagementService/branch/main/graph/badge.svg)](https://codecov.io/gh/vatsal278/UserManagementService)
 
 The application will be split up into multiple components, each having a particular feature and use case. This will allow individual scale up/down and can be started up as micro-services.
 
@@ -25,7 +27,7 @@ Requests can be specific to the the concerned endpoint while responses must be o
 >    }
 >    ```
 
-## User Management Service:
+## User Management Service Endpoints:
 
 ### Registration
  A first time user hits this endpoint to create a new account. The account will be created in a Relational DB with `email` as the `primary key`, `company_name`, `name` & `password` as `varchar`, `registered_on` & `updated_on` as `timestamp`, `active` as `boolean`, and `active_devices` as `integer`.
@@ -145,7 +147,7 @@ Response Body(json):
   "message": "SUCCESS",
   "data": {
     "name": "<full name>",
-     // if email was abcde123@gmail.com
+     // if email was abcde123@gmail.com       (?<=.{2})[^@\n](?=[^@\n]{2,}?@)
     "email": "<masked email -> abxxxxx23@xxx.com>",
     "company": "<company name>",
     "last_login": "<timestamp>"

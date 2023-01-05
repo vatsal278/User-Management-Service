@@ -38,6 +38,12 @@ const (
 	InvalidCredentials
 	ErrDuration
 	AccActivationErr
+	ErrPassLowerCase
+	ErrPassUpperCase
+	ErrPassNumeric
+	ErrPassSpecial
+	ErrPassRegex
+	ErrExtractMsg
 )
 
 var errCodes = map[errCode]string{
@@ -72,6 +78,12 @@ var errCodes = map[errCode]string{
 	InvalidCredentials:     "Invalid user credentials",
 	ErrDuration:            "Error parsing time duration",
 	AccActivationErr:       "Err activating account",
+	ErrPassRegex:           "failed to match password",
+	ErrPassLowerCase:       "password must contain 1 lower case character",
+	ErrPassUpperCase:       "password must contain 1 upper case character",
+	ErrPassNumeric:         "password must contain 1 numeric character",
+	ErrPassSpecial:         "password must contain 1 special character",
+	ErrExtractMsg:          "unable to extract msg",
 }
 
 func GetErr(code errCode) string {

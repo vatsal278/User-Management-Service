@@ -37,7 +37,7 @@ func (m *MockUserMgmtSvcLogicIer) EXPECT() *MockUserMgmtSvcLogicIerMockRecorder 
 }
 
 // Activate mocks base method.
-func (m *MockUserMgmtSvcLogicIer) Activate(arg0 interface{}) *model.Response {
+func (m *MockUserMgmtSvcLogicIer) Activate(arg0 string) *model.Response {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Activate", arg0)
 	ret0, _ := ret[0].(*model.Response)
@@ -93,7 +93,7 @@ func (mr *MockUserMgmtSvcLogicIerMockRecorder) Signup(arg0 interface{}) *gomock.
 }
 
 // UserData mocks base method.
-func (m *MockUserMgmtSvcLogicIer) UserData(arg0 interface{}) *model.Response {
+func (m *MockUserMgmtSvcLogicIer) UserData(arg0 string) *model.Response {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UserData", arg0)
 	ret0, _ := ret[0].(*model.Response)

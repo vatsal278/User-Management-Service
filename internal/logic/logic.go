@@ -5,7 +5,6 @@ import (
 	"github.com/PereRohit/util/log"
 	respModel "github.com/PereRohit/util/model"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/ggwhite/go-masker"
 	"github.com/google/uuid"
 	"github.com/vatsal278/UserManagementService/internal/codes"
 	"github.com/vatsal278/UserManagementService/internal/config"
@@ -14,6 +13,7 @@ import (
 	"github.com/vatsal278/UserManagementService/internal/repo/crypto"
 	"github.com/vatsal278/UserManagementService/internal/repo/datasource"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -23,8 +23,8 @@ type UserMgmtSvcLogicIer interface {
 	HealthCheck() bool
 	Signup(model.SignUpCredentials) *respModel.Response
 	Login(http.ResponseWriter, model.LoginCredentials) *respModel.Response
-	UserData(any) *respModel.Response
-	Activate(id any) *respModel.Response
+	UserData(string) *respModel.Response
+	Activate(id string) *respModel.Response
 }
 
 type userMgmtSvcLogic struct {
@@ -160,13 +160,6 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 		}
 	}
 	id := result[0].Id
-	if err != nil {
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: codes.GetErr(codes.ErrDuration),
-			Data:    nil,
-		}
-	}
 	jwtToken, err := l.jwtService.GenerateToken(jwt.SigningMethodHS256, id, l.cookie.Expiry)
 	if err != nil {
 		return &respModel.Response{
@@ -178,13 +171,12 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    jwtToken,
-		MaxAge:   int(l.cookie.Expiry),
+		MaxAge:   int(l.cookie.Expiry.Seconds()),
 		Path:     l.cookie.Path,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(l.cookie.Expiry),
+		Expires:  time.Now().UTC().Add(l.cookie.Expiry),
 	})
-
 	newActiveDvc := result[0].ActiveDevices + 1
 	err = l.DsSvc.Update(map[string]interface{}{"active_devices": newActiveDvc}, map[string]interface{}{"email": credential.Email})
 	if err != nil {
@@ -202,8 +194,7 @@ func (l userMgmtSvcLogic) Login(w http.ResponseWriter, credential model.LoginCre
 	}
 }
 
-func (l userMgmtSvcLogic) Activate(id any) *respModel.Response {
-
+func (l userMgmtSvcLogic) Activate(id string) *respModel.Response {
 	err := l.DsSvc.Update(map[string]interface{}{"active": true}, map[string]interface{}{"user_id": id})
 	if err != nil {
 		log.Error(err)
@@ -220,20 +211,10 @@ func (l userMgmtSvcLogic) Activate(id any) *respModel.Response {
 	}
 }
 
-func (l userMgmtSvcLogic) UserData(id any) *respModel.Response {
-
-	i, ok := id.(string)
-	if !ok {
-		log.Error("cant assert id")
-		return &respModel.Response{
-			Status:  http.StatusInternalServerError,
-			Message: codes.GetErr(codes.ErrAssertUserid),
-			Data:    nil,
-		}
-	}
-	user, err := l.DsSvc.Get(map[string]interface{}{"user_id": i})
+func (l userMgmtSvcLogic) UserData(id string) *respModel.Response {
+	user, err := l.DsSvc.Get(map[string]interface{}{"user_id": id})
 	if err != nil {
-		log.Error("cant fetch user from db")
+		log.Error(err)
 		return &respModel.Response{
 			Status:  http.StatusInternalServerError,
 			Message: codes.GetErr(codes.ErrFetchingUser),
@@ -247,9 +228,20 @@ func (l userMgmtSvcLogic) UserData(id any) *respModel.Response {
 			Data:    nil,
 		}
 	}
+
+	eSlice := strings.Split(user[len(user)-1].Email, "@")
+	a := strings.Split(eSlice[0], "")
+	for i := 2; i < len(a)-2; i++ {
+		a[i] = "x"
+	}
+	e := strings.Join(a, "")
+	first, last, _ := strings.Cut(eSlice[1], ".")
+	first = "xxx"
+	maskedEmail := e + "@" + first + "." + last
+
 	userDetails := model.UserDetails{
 		Name:      user[len(user)-1].Name,
-		Email:     masker.Email(user[len(user)-1].Email),
+		Email:     maskedEmail,
 		Company:   user[len(user)-1].Company,
 		LastLogin: user[len(user)-1].UpdatedOn,
 	}

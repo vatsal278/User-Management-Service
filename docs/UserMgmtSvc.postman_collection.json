@@ -1,0 +1,116 @@
+{
+	"info": {
+		"_postman_id": "acc0ef6e-2f95-4df0-bd94-131be66a52ca",
+		"name": "user management svc",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "21239620"
+	},
+	"item": [
+		{
+			"name": "register",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"vatsal\",\r\n  \"registration_date\": \"2022-11-11\",\r\n  \"email\": \"vatsal@gmail.com\",\r\n  \"password\": \"Abcde@12345\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/v1/register",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"v1",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"vatsal\",\r\n  \"password\": \"Abcde@12345\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/v1/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"v1",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "activation",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "User-Agent",
+						"value": "UserAgent",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"user_id\":\"c3bac85a-7582-45c4-8b07-4b295f4c5d0f\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/v1/activate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"v1",
+						"activate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "user",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "health",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}
