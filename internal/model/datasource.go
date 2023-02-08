@@ -26,10 +26,10 @@ type User struct {
 }
 
 type UserDetails struct {
-	Name      string
-	Email     string
-	Company   string
-	LastLogin time.Time
+	Name      string    ` json:"name,omitempty"`
+	Email     string    `json:"email,omitempty"`
+	Company   string    `json:"company,omitempty"`
+	LastLogin time.Time `json:"lastLogin"`
 }
 
 const Schema = `
